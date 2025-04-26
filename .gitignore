@@ -1,2 +1,16 @@
 node_modules
 .env
+dist
+build
+coverage 
+scripts
+*.log
+*.tmp
+*.swp
+.idea/
+.vscode/
+*.bak
+*.env.local
+*.env.development
+*.env.production
+*.env.test
