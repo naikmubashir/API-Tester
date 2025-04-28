@@ -26,6 +26,9 @@ exports.createNewYamlRule = async (req, res) => {
 
         res.status(201).json({ message: "YAML rule created successfully.", data: savedRule });
     } catch (error) {
+        if (error.code === 11000) { // MongoDB duplicate key error code
+            return res.status(400).json({ message: "A YAML rule with this name already exists." });
+        }
         res.status(500).json({ message: "An error occurred while creating the YAML rule.", error: error.message });
     }
 };
