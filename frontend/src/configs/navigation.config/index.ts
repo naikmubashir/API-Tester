@@ -17,6 +17,26 @@ const navigationConfig: NavigationTree[] = [
         authority: [],
         subMenu: [],
     },
+    {
+        key: 'rules',
+        path: '/rules',
+        title: 'Rules',
+        translateKey: 'nav.rules',
+        icon: 'rules',
+        type: NAV_ITEM_TYPE_ITEM,
+        authority: [],
+        subMenu: [],
+    },
+    {
+        key: 'requests',
+        path: '/requests',
+        title: 'Requests',
+        translateKey: 'nav.requests',
+        icon: 'requests',
+        type: NAV_ITEM_TYPE_ITEM,
+        authority: [],
+        subMenu: [],
+    },
     /** Example purpose only, please remove */
     {
         key: 'singleMenuItem',
