@@ -17,4 +17,7 @@ app.use('/api/requests',requests)
 app.use('/api/fetch',fetch)
 app.use('/api/yaml-rules', yamlRules);
 app.use('/api/rule-results', ruleResults);
+app.use('*', (req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+});
 app.listen(PORT,()=>console.log('App running on Port:',PORT))
