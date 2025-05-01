@@ -54,3 +54,32 @@ exports.fetchAndStoreSwagger = async (req, res) => {
         }
     }
 };
+
+exports.getAllSwaggers = async (req, res) => {
+    try {
+        console.log('Fetching all APIs ordered by creation date');
+        const apis = await ApiInfo.find({}, '-__v') // Exclude the __v field
+            .sort({ createdAt: -1 }) // Sort by creation date in descending order
+            .populate('paths', '-__v'); // Populate the paths field and exclude __v
+
+        if (!apis || apis.length === 0) {
+            console.warn('No APIs found in the database');
+            return res.status(404).json({
+                message: 'No APIs found',
+                data: []
+            });
+        }
+
+        console.log('Successfully retrieved all APIs');
+        return res.status(200).json({
+            message: 'APIs retrieved successfully',
+            data: apis
+        });
+    } catch (error) {
+        console.error('Error retrieving APIs:', error.stack || error.message);
+        return res.status(500).json({
+            error: 'Failed to retrieve APIs',
+            details: error.message
+        });
+    }
+};
