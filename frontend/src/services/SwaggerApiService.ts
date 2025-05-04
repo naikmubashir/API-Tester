@@ -32,3 +32,26 @@ export async function apiGetAllRequests() {
         method: 'get',
     })
 }
+
+// Define interface for delete response
+interface DeleteResponse {
+    success: boolean
+    message: string
+    data?: any
+}
+
+// DELETE all requests
+export async function apiDeleteAllRequests() {
+    return ApiService.fetchDataWithAxios<DeleteResponse>({
+        url: '/requests',
+        method: 'delete',
+    })
+}
+
+// DELETE specific request by ID
+export async function apiDeleteRequest(requestId: string) {
+    return ApiService.fetchDataWithAxios<DeleteResponse>({
+        url: `/requests/${requestId}`,
+        method: 'delete',
+    })
+}
