@@ -43,7 +43,7 @@ interface DeleteResponse {
 // DELETE all requests
 export async function apiDeleteAllRequests() {
     return ApiService.fetchDataWithAxios<DeleteResponse>({
-        url: '/requests',
+        url: '/requests/delete/all',
         method: 'delete',
     })
 }
@@ -51,7 +51,10 @@ export async function apiDeleteAllRequests() {
 // DELETE specific request by ID
 export async function apiDeleteRequest(requestId: string) {
     return ApiService.fetchDataWithAxios<DeleteResponse>({
-        url: `/requests/${requestId}`,
+        url: `/requests/delete`,
         method: 'delete',
+        data: {
+            id: requestId
+        }
     })
 }
