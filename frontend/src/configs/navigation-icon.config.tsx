@@ -14,16 +14,16 @@ import {
 export type NavigationIcons = Record<string, JSX.Element>
 
 const navigationIcon: NavigationIcons = {
-    home: <PiHouseLineDuotone />,
+    imports: <PiHouseLineDuotone />,
     rules: <PiAddressBookDuotone/> ,
     requests: <PiStackDuotone/> ,
     dashboard: <PiDiceFourDuotone/> ,
     scans: <PiScanDuotone/> ,
-    singleMenu: <PiAcornDuotone />,
-    collapseMenu: <PiArrowsInDuotone />,
-    groupSingleMenu: <PiBookOpenUserDuotone />,
-    groupCollapseMenu: <PiBookBookmarkDuotone />,
-    groupMenu: <PiBagSimpleDuotone />
+    // singleMenu: <PiAcornDuotone />,
+    // collapseMenu: <PiArrowsInDuotone />,
+    // groupSingleMenu: <PiBookOpenUserDuotone />,
+    // groupCollapseMenu: <PiBookBookmarkDuotone />,
+    // groupMenu: <PiBagSimpleDuotone />
 }
 
 export default navigationIcon
