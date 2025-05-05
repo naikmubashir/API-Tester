@@ -39,7 +39,8 @@ const Requests = () => {
     // Delete single request
     const handleDeleteRequest = async (id: string) => {
     try {
-        const response = await apiDeleteRequest(id)
+        const response = await apiDeleteRequest(id);
+        console.log('re',response)
         if (response?.success) {
             toast.push(
                 <Notification type="success" title="Success">
@@ -98,21 +99,26 @@ const handleDeleteAll = async () => {
                 return methodKeys.map((method:string) => { 
                     const colorClass = methodColors[method.toLowerCase()] || 'bg-gray-500';
                     return(
-                    <Card key={req.path+'-'+req.method}>
-                        <span className={`text-white ${colorClass} p-2 rounded-lg`}>
-                        {method.toUpperCase()}
-                        </span> 
-                        <code className='px-6 text-black'>
-                        {req.path}
-                        </code>
+                    <Card key={req.path+'-'+method} >
+                        <div className='flex'>
+                            <div>
+
+                            <span className={`text-white ${colorClass} p-2 rounded-lg`}>
+                                {method.toUpperCase()}
+                            </span>
+                            <code className='px-6 text-black'>
+                                {req.path}
+                            </code>
+                            </div>
                         <Button 
                             variant="plain" 
                             className="ml-auto" 
-                            onClick={() => handleDeleteRequest(req.id)}
+                            onClick={() => handleDeleteRequest(req._id)}
                             size="sm"
-                        >
+                            >
                             Delete Request
                         </Button>
+                        </div>
                     </Card>
                     )
                 }

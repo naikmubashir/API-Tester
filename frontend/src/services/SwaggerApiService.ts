@@ -51,10 +51,9 @@ export async function apiDeleteAllRequests() {
 // DELETE specific request by ID
 export async function apiDeleteRequest(requestId: string) {
     return ApiService.fetchDataWithAxios<DeleteResponse>({
-        url: `/requests/delete`,
+        //url: `/requests/delete`,
+        url: `/requests/delete/${requestId}`,
         method: 'delete',
-        data: {
-            id: requestId
-        }
+        
     })
 }
