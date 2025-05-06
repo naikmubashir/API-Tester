@@ -19,11 +19,15 @@ exports.fetchAndStoreSwagger = async (req, res) => {
 
         // Process and store Request documents
         const requestDocs = await Promise.all(
-            Object.entries(swaggerData.paths).map(async ([path, methods]) => {
-                const request = new Request({ path, methods });
-                await request.save();
-                return request._id;
-            })
+            Object.entries(swaggerData.paths).flatMap(([path, methods]) =>
+                Object.entries(methods).map(async ([method,details])=>{
+                    console.log("MMM",method)
+                    console.log("MMMPPPP",path)
+                    const request = new Request({ path, method: method.toLowerCase(), details});
+                    await request.save();
+                    return request._id;
+                    })
+                )
         );
 
         // Store ApiInfo document
