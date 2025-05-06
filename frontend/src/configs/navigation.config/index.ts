@@ -57,6 +57,16 @@ const navigationConfig: NavigationTree[] = [
         authority: [],
         subMenu: [],
     },
+    {
+        key: 'processed-requests',
+        path: '/processed-requests',
+        title: 'Processed Requests',
+        translateKey: 'nav.processedrequests',
+        icon: 'requests',
+        type: NAV_ITEM_TYPE_ITEM,
+        authority: [],
+        subMenu: [],
+    },
     /** Example purpose only, please remove */
     // {
     //     key: 'singleMenuItem',

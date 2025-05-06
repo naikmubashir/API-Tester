@@ -21,12 +21,11 @@ const Home = () => {
         try {
             setLoadingData(true)
             const response = await apiGetAllSwaggers()
-            console.log('RULWS', response.data)
             setRules(response.data)
         } catch (error) {
             toast.push(
                 <Notification type="danger" title="Error">
-                    Failed to fetch YAML rules
+                    Failed to fetch Previous Imports
                 </Notification>,
             )
         } finally {

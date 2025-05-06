@@ -10,15 +10,17 @@ import {
     PiDiceFourDuotone,
     PiScanDuotone,
 } from 'react-icons/pi'
+import { CiImport } from "react-icons/ci";
 
 export type NavigationIcons = Record<string, JSX.Element>
 
 const navigationIcon: NavigationIcons = {
-    imports: <PiHouseLineDuotone />,
+    imports: <CiImport />,
     rules: <PiAddressBookDuotone/> ,
     requests: <PiStackDuotone/> ,
     dashboard: <PiDiceFourDuotone/> ,
     scans: <PiScanDuotone/> ,
+    // home: <PiHouseLineDuotone />,
     // singleMenu: <PiAcornDuotone />,
     // collapseMenu: <PiArrowsInDuotone />,
     // groupSingleMenu: <PiBookOpenUserDuotone />,

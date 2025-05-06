@@ -36,6 +36,12 @@ export const protectedRoutes: Routes = [
         component: lazy(() => import('@/views/Scans')),
         authority: [],
     },
+    {
+        key: 'processed-requests',
+        path: '/processed-requests',
+        component: lazy(() => import('@/views/ProcessedRequests')),
+        authority: [],
+    },
     
     /** Example purpose only, please remove */
     // {
