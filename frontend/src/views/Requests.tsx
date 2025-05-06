@@ -89,48 +89,37 @@ const handleDeleteAll = async () => {
       <Button onClick={handleDeleteAll}>Delete All Requests </Button>
         </div>
       <div className=' space-y-2'>
-        {
-            requests.map((req:any)=>{ 
-                const methodKeys = Object.keys(req.methods || {});
-                
-               
-        
-                // For each method, return a separate <li>
-                return methodKeys.map((method:string) => { 
-                    const colorClass = methodColors[method.toLowerCase()] || 'bg-gray-500';
-                    return(
-                    <Card key={req.path+'-'+method} >
-                        <div className='flex'>
-                            <div>
-
-                            <span className={`text-white ${colorClass} p-2 rounded-lg`}>
-                                {method.toUpperCase()}
-                            </span>
-                            <code className='px-6 text-black'>
-                                {req.path}
-                            </code>
-                            </div>
-                        <Button 
-                            variant="plain" 
-                            className="ml-auto" 
-                            onClick={() => handleDeleteRequest(req._id)}
-                            size="sm"
-                            >
-                            Delete Request
-                        </Button>
-                        </div>
+      {requests.length === 0 ? (
+                    <Card className="p-4 text-center text-gray-500">
+                        No requests found
                     </Card>
-                    )
-                }
-            
-            
-            );
-            })
-        }
+                ) : (
+                    requests.map((req) => (
+                        <Card key={req._id} className="hover:shadow-md transition-shadow duration-200">
+                            <div className="flex items-center justify-between ">
+                                <div className="flex items-center gap-4">
+                                    <span className={`${methodColors[req.method.toLowerCase()] || 'bg-gray-500'} text-white px-3 py-1 rounded-lg text-sm font-medium`}>
+                                        {req.method.toUpperCase()}
+                                    </span>
+                                    <code className="text-gray-700">
+                                        {req.path}
+                                    </code>
+                                </div>
+                                <Button 
+                                    variant="plain"
+                                    onClick={() => handleDeleteRequest(req._id)}
+                                    className="text-red-500 hover:text-red-600"
+                                >
+                                    Delete
+                                </Button>
+                            </div>
+                        </Card>
+                    ))
+                )}
        
       </div>
     </div>
   )
 }
 
-export default Requests
+export default Requests;

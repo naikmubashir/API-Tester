@@ -1,7 +1,10 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Card } from './ui'
 
 const ScanHistory = () => {
+  useEffect(()=>{
+    
+  },[])
   return (
     <div className="space-y-4">
           <Card
