@@ -4,7 +4,7 @@ const requestController= require('../controllers/request.controller')
 const Request= require('../models/Request');
 
 router.get('/', requestController.getAllRequests);
-router.delete('/delete', requestController.deleteRequest);
 router.delete('/delete/all', requestController.deleteAllRequests);
+router.delete('/delete/:id', requestController.deleteRequest);
 
 module.exports=router
