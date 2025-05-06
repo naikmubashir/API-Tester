@@ -30,10 +30,11 @@ const ProcessedRequest = require('../models/ProcessedRequest');
   //match and replace
   console.log('object',reqDoc)
   const modifiedPath=ruleOne(reqDoc,'{petId}','1');
+  console.log('mPATH',modifiedPath)
   // Create a new ProcessedRequest with the modified path
   const processed = new ProcessedRequest({
     path: modifiedPath,
-    methods: reqDoc.methods,
+    method: reqDoc.method,
     scan: scanId,
     request: {
         body: reqDoc.body,
@@ -43,11 +44,13 @@ const ProcessedRequest = require('../models/ProcessedRequest');
   });
    // Make actual HTTP request
    try {
-    const method = Object.keys(reqDoc.methods)[0]?.toUpperCase() || 'GET';
-    const fullUrl = `${process.env.API_HOST}${modifiedPath}`;
+    const method = reqDoc.method?.toLowerCase() || 'get';
+    const fullUrl = `${process.env.HOST}${modifiedPath}`;
+    console.log("MMMModified",fullUrl)
+    console.log("MMMModified",method)
     
     const response = await axios({
-        method,
+        method:method,
         url: fullUrl,
         headers: processed.request.headers,
         data: processed.request.body,

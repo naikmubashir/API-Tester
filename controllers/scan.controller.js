@@ -130,11 +130,11 @@ async function processScan(scanId) {
             scan.originalRequest._id,
             scan.yamlRule._id
         );
-
+        console.log('PROCESSSS',processedRequest)
         // Update scan with results
         scan.results.push({
             endpoint: processedRequest.path,
-            method: Object.keys(processedRequest.methods)[0]?.toUpperCase() || 'GET',
+            method: processedRequest.method?.toUpperCase() || 'GET',
             processedRequest: processedRequest._id,
             passed: processedRequest.isSuccessful,
             violations: [] // Add logic to determine violations

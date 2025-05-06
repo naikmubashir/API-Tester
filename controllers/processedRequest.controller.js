@@ -15,7 +15,10 @@ exports.createProcessedRequest = async (req, res) => {
 exports.getAllProcessedRequests = async (req, res) => {
     try {
         const processedRequests = await ProcessedRequest.find();
-        res.status(200).json(processedRequests);
+        res.status(200).json({
+            message:'Processed Requests retrieved successfully',
+            data:processedRequests
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
