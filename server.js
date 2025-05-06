@@ -6,7 +6,8 @@ const connectDb = require('./config/connectDb');
 const requests=require('./routes/request.route')
 const fetch= require('./routes/fetch.route')
 const yamlRules= require('./routes/yamlRules.route')
-const ruleResults= require('./routes/processedRequest.route')
+const processedRequests= require('./routes/processedRequest.route');
+const scan=require('./routes/scan.route');
 require('dotenv').config();
 
 connectDb();
@@ -16,7 +17,8 @@ app.use(express.json());
 app.use('/api/requests',requests)
 app.use('/api/fetch',fetch)
 app.use('/api/yaml-rules', yamlRules);
-app.use('/api/rule-results', ruleResults);
+app.use('/api/processed-requests',processedRequests);
+app.use('/api/scans', scan);
 app.use((req, res) => {
     res.status(404).json({ 
         success: false,

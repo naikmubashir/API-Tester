@@ -3,7 +3,7 @@ const axios= require('axios')
 const Request = require('../models/Request');
 const YamlRule = require('../models/YamlRule');
 const ProcessedRequest = require('../models/ProcessedRequest');
- const applyRuleToRequest= async(requestId, ruleId)=>{
+ const applyRuleToRequest= async(requestId, ruleId, scanId)=>{
      // 1. Load both documents
   const [reqDoc, ruleDoc] = await Promise.all([
     Request.findById(requestId),
@@ -33,12 +33,41 @@ const ProcessedRequest = require('../models/ProcessedRequest');
   // Create a new ProcessedRequest with the modified path
   const processed = new ProcessedRequest({
     path: modifiedPath,
-    methods: reqDoc.methods
+    methods: reqDoc.methods,
+    scan: scanId,
+    request: {
+        body: reqDoc.body,
+        headers: reqDoc.headers,
+        query: reqDoc.query
+    }
   });
+   // Make actual HTTP request
+   try {
+    const method = Object.keys(reqDoc.methods)[0]?.toUpperCase() || 'GET';
+    const fullUrl = `${process.env.API_HOST}${modifiedPath}`;
+    
+    const response = await axios({
+        method,
+        url: fullUrl,
+        headers: processed.request.headers,
+        data: processed.request.body,
+        params: processed.request.query
+    });
 
-  // Save the new processed request
-  const saved = await processed.save();
-  console.log('Processed request saved:', saved);
+    processed.response = {
+        status: response.status,
+        headers: response.headers,
+        body: response.data
+    };
+} catch (error) {
+    processed.response = {
+        status: error.response?.status || 500,
+        error: error.message
+    };
+}
+
+return await processed.save();
+  
 }
 
 const ruleOne=(originalRequest,matchText, replaceText)=>{
@@ -47,7 +76,7 @@ const ruleOne=(originalRequest,matchText, replaceText)=>{
 
 
 
-const applyRuleToAllRequests= async (ruleId)=>{
+const applyRuleToAllRequests= async (ruleId, scanId)=>{
   const [reqDocs, ruleDoc] = await Promise.all([
     Request.find(),
     YamlRule.findById(ruleId),
@@ -73,23 +102,16 @@ const applyRuleToAllRequests= async (ruleId)=>{
   //     console.error(`Failed to process request ${i}:`, res.reason);
   //   }
   // });
-  const processedRequests = await Promise.all(
-    relevantRequests.map(async (reqDoc) => {
-      //const modifiedPath = ruleOne(reqDoc, ruleDefinition);
-      const modifiedPath = ruleOne(reqDoc, '{petId}','1');
-      const processed = new ProcessedRequest({
-        path: modifiedPath,
-        methods: reqDoc.methods
-      });
+  
 
-      return await processed.save();
+  const processedRequests = await Promise.all(
+    relevantRequests.map(async (req) => {
+        return await applyRuleToRequest(req._id, ruleId, scanId);
     })
   );
 
-  // Send HTTP requests to the saved paths
-  sendHttpRequestsToSavedPath(processedRequests);
-  
 
+  return processedRequests;
 
 }
 
