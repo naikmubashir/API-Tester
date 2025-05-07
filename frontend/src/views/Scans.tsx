@@ -1,7 +1,9 @@
 import CreateScan from '@/components/CreateScan'
 import ScanHistory from '@/components/ScanHistory'
-import { Button, Card, Dropdown } from '@/components/ui'
-import { useState } from 'react'
+import { Button, Card, Dropdown, Notification, toast } from '@/components/ui'
+import { apiGetAllRequests } from '@/services/SwaggerApiService'
+import { apiGetAllYamlRules, YamlRule } from '@/services/YamlRulesService'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 
@@ -15,6 +17,34 @@ const Scan = () => {
     setNewScan(true)
 
   }
+  const [rules, setRules] = useState<YamlRule[]>([]);
+    const [requests, setRequests] = useState<Request[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [rulesResponse, requestsResponse] = await Promise.all([
+                    apiGetAllYamlRules(),
+                    apiGetAllRequests()
+                ]);
+                console.log('SCAN',requestsResponse, )
+                console.log('SCAN',rulesResponse )
+                setRules(rulesResponse.data || []);
+                setRequests(requestsResponse.data || []);
+            } catch (error) {
+                toast.push(
+                    <Notification type="danger" title="Error">
+                        Failed to fetch required data
+                    </Notification>
+                );
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
   return (
     <div className="p-6 space-y-6">
       
@@ -64,7 +94,11 @@ const Scan = () => {
           newScan
           ?(
 
-            <CreateScan/>
+            <CreateScan 
+            rules={rules} 
+            requests={requests}
+            onCancel={() => navigate('/scans')}
+        />
           )
           :(
 
