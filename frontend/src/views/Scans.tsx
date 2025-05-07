@@ -28,8 +28,6 @@ const Scan = () => {
                     apiGetAllYamlRules(),
                     apiGetAllRequests()
                 ]);
-                console.log('SCAN',requestsResponse, )
-                console.log('SCAN',rulesResponse )
                 setRules(rulesResponse.data || []);
                 setRequests(requestsResponse.data || []);
             } catch (error) {

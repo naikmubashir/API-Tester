@@ -69,10 +69,10 @@ const CreateScan: React.FC<CreateScanProps> = ({
             const response = await apiCreateScan(formData)
             toast.push(
                 <Notification type="success" title="Success">
-                    Scan created successfully
+                    Scan has been initiated successfully
                 </Notification>,
             )
-            navigate(`/scans/${response.data._id}`)
+            navigate(`/scan-details/${response.data._id}`)
         } catch (error) {
             toast.push(
                 <Notification type="danger" title="Error">

@@ -42,7 +42,13 @@ export const protectedRoutes: Routes = [
         component: lazy(() => import('@/views/ProcessedRequests')),
         authority: [],
     },
-    
+    {
+        key: 'scan-details',
+        path: '/scan-details/:id',
+        component: lazy(() => import('@/views/ScanDetails')),
+        authority: [],
+    },
+
     /** Example purpose only, please remove */
     // {
     //     key: 'singleMenuItem',
