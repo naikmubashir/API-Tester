@@ -3,7 +3,11 @@ import { Card, Button, Tag } from '@/components/ui'
 import { apiGetAllScans, type Scan } from '@/services/ScansApiService'
 import { apiGetAllRequests } from '@/services/SwaggerApiService'
 import { apiGetAllYamlRules, type YamlRule } from '@/services/YamlRulesService'
-import { calculateTimeStats, formatDuration, type TimeStats } from '@/utils/TimeAnalytics'
+import {
+    calculateTimeStats,
+    formatDuration,
+    type TimeStats,
+} from '@/utils/TimeAnalytics'
 import Chart, { type ChartProps } from '@/components/shared/Chart'
 import {
     HiBolt,
@@ -15,7 +19,7 @@ import {
     HiShieldCheck,
     HiOutlineClock,
     HiOutlineChartBar,
-    HiOutlineScale
+    HiOutlineScale,
 } from 'react-icons/hi2'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -33,10 +37,10 @@ interface Request {
 }
 
 interface YamlRuleRef {
-    _id: string;
-    name: string;
-    content?: string;
-    description?: string;
+    _id: string
+    name: string
+    content?: string
+    description?: string
 }
 
 interface ExtendedStats {
@@ -82,19 +86,19 @@ const Dashboard = () => {
             dailyScans: {},
             weeklyScans: {},
             monthlyScans: {},
-            responseTimeByMethod: {}
+            responseTimeByMethod: {},
         },
         rulesStats: {
             mostUsedRules: [],
-            ruleEffectiveness: []
+            ruleEffectiveness: [],
         },
         endpointStats: {
             mostTestedEndpoints: [],
             responseStatusCodes: {},
-            failurePatterns: []
-        }
+            failurePatterns: [],
+        },
     })
-    
+
     const [recentScans, setRecentScans] = useState<Scan[]>([])
     const [loading, setLoading] = useState(true)
     const [timeRange, setTimeRange] = useState('week') // 'day', 'week', 'month'
@@ -105,19 +109,27 @@ const Dashboard = () => {
 
     const fetchDashboardData = async () => {
         try {
-            const [scansRes, requestsRes, rulesRes] = await Promise.all([
+            const [scansRes, requestsRes, rulesRes] = (await Promise.all([
                 apiGetAllScans(),
                 apiGetAllRequests(),
-                apiGetAllYamlRules()
-            ]) as [ApiResponse<Scan[]>, ApiResponse<Request[]>, ApiResponse<YamlRule[]>]
+                apiGetAllYamlRules(),
+            ])) as [
+                ApiResponse<Scan[]>,
+                ApiResponse<Request[]>,
+                ApiResponse<YamlRule[]>,
+            ]
 
             const scans = scansRes.data || []
             const requests = requestsRes.data || []
             const rules = Array.isArray(rulesRes.data) ? rulesRes.data : []
 
-            const completedScans = scans.filter((scan: Scan) => scan.status === 'completed')
-            const failedScans = scans.filter((scan: Scan) => scan.status === 'failed')
-            
+            const completedScans = scans.filter(
+                (scan: Scan) => scan.status === 'completed',
+            )
+            const failedScans = scans.filter(
+                (scan: Scan) => scan.status === 'failed',
+            )
+
             // Calculate time-based statistics
             const timeStats = calculateTimeStats(scans)
 
@@ -136,8 +148,11 @@ const Dashboard = () => {
 
             // Calculate rules statistics
             const ruleUsageCount: Record<string, number> = {}
-            const ruleEffectiveness: Record<string, { success: number; total: number }> = {}
-            
+            const ruleEffectiveness: Record<
+                string,
+                { success: number; total: number }
+            > = {}
+
             // Calculate endpoint statistics
             const endpointTestCount: Record<string, number> = {}
             const statusCodes: Record<string, number> = {}
@@ -153,31 +168,37 @@ const Dashboard = () => {
 
                 // Analyze rules usage and effectiveness
                 if (scan.yamlRule) {
-                    const ruleName = typeof scan.yamlRule === 'string' 
-                        ? scan.yamlRule 
-                        : (scan.yamlRule as YamlRuleRef).name;
-                        
-                    ruleUsageCount[ruleName] = (ruleUsageCount[ruleName] || 0) + 1;
-                    
+                    const ruleName =
+                        typeof scan.yamlRule === 'string'
+                            ? scan.yamlRule
+                            : (scan.yamlRule as YamlRuleRef).name
+
+                    ruleUsageCount[ruleName] =
+                        (ruleUsageCount[ruleName] || 0) + 1
+
                     if (!ruleEffectiveness[ruleName]) {
-                        ruleEffectiveness[ruleName] = { success: 0, total: 0 };
+                        ruleEffectiveness[ruleName] = { success: 0, total: 0 }
                     }
-                    ruleEffectiveness[ruleName].total++;
+                    ruleEffectiveness[ruleName].total++
                     if (scan.status === 'completed') {
-                        ruleEffectiveness[ruleName].success++;
+                        ruleEffectiveness[ruleName].success++
                     }
                 }
 
                 // Analyze endpoints
-                scan.results?.forEach(result => {
-                    endpointTestCount[result.endpoint] = (endpointTestCount[result.endpoint] || 0) + 1
-                    
-                    const status = result.processedRequest?.response?.status.toString() || 'unknown'
+                scan.results?.forEach((result) => {
+                    endpointTestCount[result.endpoint] =
+                        (endpointTestCount[result.endpoint] || 0) + 1
+
+                    const status =
+                        result.processedRequest?.response?.status.toString() ||
+                        'unknown'
                     statusCodes[status] = (statusCodes[status] || 0) + 1
 
                     if (!result.passed) {
-                        result.violations?.forEach(violation => {
-                            failurePatterns[violation.rule] = (failurePatterns[violation.rule] || 0) + 1
+                        result.violations?.forEach((violation) => {
+                            failurePatterns[violation.rule] =
+                                (failurePatterns[violation.rule] || 0) + 1
                         })
                     }
                 })
@@ -192,7 +213,7 @@ const Dashboard = () => {
             const ruleEffectivenessArray = Object.entries(ruleEffectiveness)
                 .map(([name, stats]) => ({
                     name,
-                    effectiveness: (stats.success / stats.total) * 100
+                    effectiveness: (stats.success / stats.total) * 100,
                 }))
                 .sort((a, b) => b.effectiveness - a.effectiveness)
                 .slice(0, 5)
@@ -213,8 +234,9 @@ const Dashboard = () => {
                 completedScans: completedScans.length,
                 failedScans: failedScans.length,
                 totalEndpoints: requests.length,
-                successRate: completedScans.length ? 
-                    Math.round((completedScans.length / scans.length) * 100) : 0,
+                successRate: completedScans.length
+                    ? Math.round((completedScans.length / scans.length) * 100)
+                    : 0,
                 criticalViolations,
                 highViolations,
                 mediumViolations,
@@ -224,13 +246,13 @@ const Dashboard = () => {
                 timeStats,
                 rulesStats: {
                     mostUsedRules,
-                    ruleEffectiveness: ruleEffectivenessArray
+                    ruleEffectiveness: ruleEffectivenessArray,
                 },
                 endpointStats: {
                     mostTestedEndpoints,
                     responseStatusCodes: statusCodes,
-                    failurePatterns: topFailurePatterns
-                }
+                    failurePatterns: topFailurePatterns,
+                },
             })
 
             setRecentScans(scans.slice(0, 5))
@@ -267,7 +289,9 @@ const Dashboard = () => {
         <div className="p-6">
             <div className="mb-6">
                 <h1 className="text-4xl font-bold">Dashboard</h1>
-                <p className="text-gray-500 mt-2">Overview of your API testing activities</p>
+                <p className="text-gray-500 mt-2">
+                    Overview of your API testing activities
+                </p>
             </div>
 
             {/* Quick Stats Grid */}
@@ -278,8 +302,12 @@ const Dashboard = () => {
                             <HiBolt className="text-2xl" />
                         </span>
                         <div className="ml-4">
-                            <h6 className="text-sm text-gray-500">Total Scans</h6>
-                            <h4 className="text-2xl font-bold">{stats.totalScans}</h4>
+                            <h6 className="text-sm text-gray-500">
+                                Total Scans
+                            </h6>
+                            <h4 className="text-2xl font-bold">
+                                {stats.totalScans}
+                            </h4>
                         </div>
                     </div>
                 </Card>
@@ -290,8 +318,12 @@ const Dashboard = () => {
                             <HiCheckCircle className="text-2xl" />
                         </span>
                         <div className="ml-4">
-                            <h6 className="text-sm text-gray-500">Success Rate</h6>
-                            <h4 className="text-2xl font-bold">{stats.successRate}%</h4>
+                            <h6 className="text-sm text-gray-500">
+                                Success Rate
+                            </h6>
+                            <h4 className="text-2xl font-bold">
+                                {stats.successRate}%
+                            </h4>
                         </div>
                     </div>
                 </Card>
@@ -302,8 +334,12 @@ const Dashboard = () => {
                             <HiExclamationTriangle className="text-2xl" />
                         </span>
                         <div className="ml-4">
-                            <h6 className="text-sm text-gray-500">Critical Violations</h6>
-                            <h4 className="text-2xl font-bold">{stats.criticalViolations}</h4>
+                            <h6 className="text-sm text-gray-500">
+                                Critical Violations
+                            </h6>
+                            <h4 className="text-2xl font-bold">
+                                {stats.criticalViolations}
+                            </h4>
                         </div>
                     </div>
                 </Card>
@@ -314,8 +350,12 @@ const Dashboard = () => {
                             <HiShieldCheck className="text-2xl" />
                         </span>
                         <div className="ml-4">
-                            <h6 className="text-sm text-gray-500">Total Rules</h6>
-                            <h4 className="text-2xl font-bold">{stats.totalRules}</h4>
+                            <h6 className="text-sm text-gray-500">
+                                Total Rules
+                            </h6>
+                            <h4 className="text-2xl font-bold">
+                                {stats.totalRules}
+                            </h4>
                         </div>
                     </div>
                 </Card>
@@ -326,8 +366,12 @@ const Dashboard = () => {
                             <HiOutlineClock className="text-2xl" />
                         </span>
                         <div className="ml-4">
-                            <h6 className="text-sm text-gray-500">Avg Scan Duration</h6>
-                            <h4 className="text-2xl font-bold">{formatDuration(stats.timeStats.avgDuration)}</h4>
+                            <h6 className="text-sm text-gray-500">
+                                Avg Scan Duration
+                            </h6>
+                            <h4 className="text-2xl font-bold">
+                                {formatDuration(stats.timeStats.avgDuration)}
+                            </h4>
                         </div>
                     </div>
                 </Card>
@@ -338,7 +382,7 @@ const Dashboard = () => {
                 <div className="flex justify-between items-center mb-4">
                     <h4 className="font-bold">Scan Activity Trends</h4>
                     <div className="flex gap-2">
-                        <Button 
+                        <Button
                             size="sm"
                             variant={timeRange === 'day' ? 'solid' : 'plain'}
                             onClick={() => setTimeRange('day')}
@@ -368,22 +412,24 @@ const Dashboard = () => {
                             {
                                 name: 'Scans',
                                 data: Object.entries(
-                                    timeRange === 'day' ? stats.timeStats.dailyScans :
-                                    timeRange === 'week' ? stats.timeStats.weeklyScans :
-                                    stats.timeStats.monthlyScans
+                                    timeRange === 'day'
+                                        ? stats.timeStats.dailyScans
+                                        : timeRange === 'week'
+                                          ? stats.timeStats.weeklyScans
+                                          : stats.timeStats.monthlyScans,
                                 ).map(([date, count]) => ({
                                     x: date,
-                                    y: count
-                                }))
-                            }
+                                    y: count,
+                                })),
+                            },
                         ]}
                         customOptions={{
                             xaxis: {
                                 type: 'category',
-                                tickPlacement: 'on'
+                                tickPlacement: 'on',
                             },
                             stroke: {
-                                curve: 'smooth'
+                                curve: 'smooth',
                             },
                             fill: {
                                 type: 'gradient',
@@ -391,9 +437,9 @@ const Dashboard = () => {
                                     shadeIntensity: 1,
                                     opacityFrom: 0.7,
                                     opacityTo: 0.3,
-                                    stops: [0, 90, 100]
-                                }
-                            }
+                                    stops: [0, 90, 100],
+                                },
+                            },
                         }}
                     />
                 </div>
@@ -405,15 +451,22 @@ const Dashboard = () => {
                     <h4 className="font-bold mb-4">Most Used Rules</h4>
                     <div className="space-y-4">
                         {stats.rulesStats.mostUsedRules.map((rule, index) => (
-                            <div key={rule.name} className="flex justify-between items-center">
-                                <span className="text-gray-700">{rule.name}</span>
+                            <div
+                                key={rule.name}
+                                className="flex justify-between items-center"
+                            >
+                                <span className="text-gray-700">
+                                    {rule.name}
+                                </span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-gray-500">{rule.count} uses</span>
+                                    <span className="text-gray-500">
+                                        {rule.count} uses
+                                    </span>
                                     <div className="w-32 bg-gray-200 rounded-full h-2">
                                         <div
                                             className="bg-blue-600 h-2 rounded-full"
                                             style={{
-                                                width: `${(rule.count / stats.rulesStats.mostUsedRules[0].count) * 100}%`
+                                                width: `${(rule.count / stats.rulesStats.mostUsedRules[0].count) * 100}%`,
                                             }}
                                         />
                                     </div>
@@ -427,14 +480,23 @@ const Dashboard = () => {
                     <h4 className="font-bold mb-4">Rule Effectiveness</h4>
                     <div className="space-y-4">
                         {stats.rulesStats.ruleEffectiveness.map((rule) => (
-                            <div key={rule.name} className="flex justify-between items-center">
-                                <span className="text-gray-700">{rule.name}</span>
+                            <div
+                                key={rule.name}
+                                className="flex justify-between items-center"
+                            >
+                                <span className="text-gray-700">
+                                    {rule.name}
+                                </span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-gray-500">{Math.round(rule.effectiveness)}%</span>
+                                    <span className="text-gray-500">
+                                        {Math.round(rule.effectiveness)}%
+                                    </span>
                                     <div className="w-32 bg-gray-200 rounded-full h-2">
                                         <div
                                             className="bg-green-600 h-2 rounded-full"
-                                            style={{ width: `${rule.effectiveness}%` }}
+                                            style={{
+                                                width: `${rule.effectiveness}%`,
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -454,20 +516,22 @@ const Dashboard = () => {
                             series={[
                                 {
                                     name: 'Response Time (ms)',
-                                    data: Object.entries(stats.timeStats.responseTimeByMethod).map(([method, time]) => ({
+                                    data: Object.entries(
+                                        stats.timeStats.responseTimeByMethod,
+                                    ).map(([method, time]) => ({
                                         x: method,
-                                        y: Math.round(time)
-                                    }))
-                                }
+                                        y: Math.round(time),
+                                    })),
+                                },
                             ]}
                             customOptions={{
                                 colors: ['#818CF8'],
                                 plotOptions: {
                                     bar: {
                                         borderRadius: 4,
-                                        horizontal: true
-                                    }
-                                }
+                                        horizontal: true,
+                                    },
+                                },
                             }}
                         />
                     </div>
@@ -478,16 +542,20 @@ const Dashboard = () => {
                     <div className="h-[300px]">
                         <Chart
                             type="donut"
-                            series={Object.values(stats.endpointStats.responseStatusCodes)}
+                            series={Object.values(
+                                stats.endpointStats.responseStatusCodes,
+                            )}
                             customOptions={{
-                                labels: Object.keys(stats.endpointStats.responseStatusCodes),
+                                labels: Object.keys(
+                                    stats.endpointStats.responseStatusCodes,
+                                ),
                                 colors: [
                                     '#10B981', // 2xx
                                     '#F59E0B', // 3xx
                                     '#EF4444', // 4xx
                                     '#6B7280', // 5xx
-                                    '#9CA3AF'  // others
-                                ]
+                                    '#9CA3AF', // others
+                                ],
                             }}
                         />
                     </div>
@@ -499,9 +567,16 @@ const Dashboard = () => {
                 <h4 className="font-bold mb-4">Common Failure Patterns</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {stats.endpointStats.failurePatterns.map((pattern) => (
-                        <div key={pattern.pattern} className="bg-red-50 rounded-lg p-4">
-                            <div className="text-red-700 font-semibold mb-2">{pattern.pattern}</div>
-                            <div className="text-red-600">{pattern.count} occurrences</div>
+                        <div
+                            key={pattern.pattern}
+                            className="bg-red-50 rounded-lg p-4"
+                        >
+                            <div className="text-red-700 font-semibold mb-2">
+                                {pattern.pattern}
+                            </div>
+                            <div className="text-red-600">
+                                {pattern.count} occurrences
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -516,21 +591,35 @@ const Dashboard = () => {
                             <tr className="border-b">
                                 <th className="text-left py-2">Endpoint</th>
                                 <th className="text-right py-2">Test Count</th>
-                                <th className="text-right py-2">Success Rate</th>
+                                <th className="text-right py-2">
+                                    Success Rate
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
-                            {stats.endpointStats.mostTestedEndpoints.map((endpoint) => (
-                                <tr key={endpoint.path} className="border-b">
-                                    <td className="py-2 font-mono text-sm">{endpoint.path}</td>
-                                    <td className="text-right py-2">{endpoint.count}</td>
-                                    <td className="text-right py-2">
-                                        <span className="text-green-600">
-                                            {Math.round(Math.random() * 100)}%
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
+                            {stats.endpointStats.mostTestedEndpoints.map(
+                                (endpoint) => (
+                                    <tr
+                                        key={endpoint.path}
+                                        className="border-b"
+                                    >
+                                        <td className="py-2 font-mono text-sm">
+                                            {endpoint.path}
+                                        </td>
+                                        <td className="text-right py-2">
+                                            {endpoint.count}
+                                        </td>
+                                        <td className="text-right py-2">
+                                            <span className="text-green-600">
+                                                {Math.round(
+                                                    Math.random() * 100,
+                                                )}
+                                                %
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ),
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -555,7 +644,7 @@ const Dashboard = () => {
                             >
                                 <div>
                                     <Link
-                                        to={`/scans/${scan._id}`}
+                                        to={`/scan-details/${scan._id}`}
                                         className="font-semibold hover:text-blue-600"
                                     >
                                         {scan.name}
