@@ -3,6 +3,7 @@ const YamlRule = require('../models/YamlRule');
 const Request = require('../models/Request');
 const ProcessedRequest = require('../models/ProcessedRequest');
 const { applyRuleToRequest } = require('../services/rule.service');
+const mongoose = require('mongoose');
 
 // Create a new scan
 exports.createScan = async (req, res) => {
@@ -130,41 +131,78 @@ async function processScan(scanId) {
             scan.originalRequest._id,
             scan.yamlRule._id
         );
-        console.log('PROCESSSS',processedRequest)
+
+        // Determine violations based on response
+        const violations = [];
+        if (!processedRequest.isSuccessful) {
+            // Add response status violation
+            violations.push({
+                rule: 'Response Status Check',
+                description: `Unexpected response status: ${processedRequest.response?.status || 'No response'}`,
+                severity: processedRequest.response?.status >= 500 ? 'critical' : 'high'
+            });
+        }
+
+        // Check for timeout or network errors
+        if (processedRequest.response?.error) {
+            violations.push({
+                rule: 'Network Error Check',
+                description: processedRequest.response.error,
+                severity: 'critical'
+            });
+        }
+
         // Update scan with results
         scan.results.push({
             endpoint: processedRequest.path,
             method: processedRequest.method?.toUpperCase() || 'GET',
             processedRequest: processedRequest._id,
             passed: processedRequest.isSuccessful,
-            violations: [] // Add logic to determine violations
+            violations
         });
 
-        // Calculate and update summary
-        const total = scan.results.length;
-        const passed = scan.results.filter(r => r.passed).length;
-        
-        scan.summary = {
-            totalEndpoints: total,
-            passedEndpoints: passed,
-            failedEndpoints: total - passed,
-            criticalViolations: 0,
-            highViolations: 0,
-            mediumViolations: 0,
-            lowViolations: 0
-        };
-
-        scan.status = 'completed';
-        scan.completedAt = new Date();
+        // Save the scan - this will trigger the pre-save hook that calculates the summary
         await scan.save();
 
     } catch (error) {
         console.error('Error processing scan:', error);
-        await Scan.findByIdAndUpdate(scanId, {
-            status: 'failed',
-            completedAt: new Date()
-        });
-        throw error; // Re-throw to be caught by the caller
+        let errorMessage;
+        
+        // Handle specific error types
+        if (error.name === 'ValidationError') {
+            errorMessage = Object.values(error.errors)
+                .map(err => err.message)
+                .join('. ');
+        } else if (error.name === 'CastError') {
+            errorMessage = 'Invalid ID format';
+        } else {
+            errorMessage = error.message || 'Unknown error occurred';
+        }
+        
+        try {
+            // Update scan with error state using findOne and save to ensure hooks run
+            const failedScan = await Scan.findById(scanId);
+            if (failedScan) {
+                failedScan.status = 'failed';
+                failedScan.completedAt = new Date();
+                failedScan.results.push({
+                    endpoint: 'N/A',
+                    method: 'N/A',
+                    passed: false,
+                    violations: [{
+                        rule: 'Scan Processing Error',
+                        description: errorMessage,
+                        severity: 'critical'
+                    }]
+                });
+                
+                await failedScan.save();
+            }
+        } catch (saveError) {
+            console.error('Error saving failed scan status:', saveError);
+        }
+        
+        throw error;
     }
 }
 
@@ -200,3 +238,4 @@ exports.deleteScan = async (req, res) => {
         });
     }
 };
+

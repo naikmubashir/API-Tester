@@ -86,7 +86,9 @@ scanSchema.pre('save', function(next) {
 
         this.results.forEach(result => {
             result.violations?.forEach(violation => {
-                violations[violation.severity]++;
+                if (violation.severity) {
+                    violations[violation.severity.toLowerCase()]++;
+                }
             });
         });
 
@@ -100,9 +102,24 @@ scanSchema.pre('save', function(next) {
             lowViolations: violations.low
         };
 
-        // Update status if all results are in
+        // Update status and completedAt if needed
         if (this.status === 'in_progress' && total > 0) {
             this.status = 'completed';
+            this.completedAt = new Date();
+        }
+    } else if (this.status === 'failed') {
+        // Ensure summary is initialized for failed scans
+        this.summary = {
+            totalEndpoints: 0,
+            passedEndpoints: 0,
+            failedEndpoints: 0,
+            criticalViolations: 1, // Count the failure itself as a critical violation
+            highViolations: 0,
+            mediumViolations: 0,
+            lowViolations: 0
+        };
+        
+        if (!this.completedAt) {
             this.completedAt = new Date();
         }
     }
