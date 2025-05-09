@@ -22,6 +22,7 @@ const Home = () => {
             setLoadingData(true)
             const response = await apiGetAllSwaggers()
             setRules(response.data)
+            console.log('IM',rules)
         } catch (error) {
             toast.push(
                 <Notification type="danger" title="Error">
@@ -48,6 +49,7 @@ const Home = () => {
             const response = await apiFetchAndStoreSwagger({
                 swaggerapi: swaggerUrl,
             })
+            const apiInfo=response.data
             toast.push(
                 <Notification type="success" title="Success">
                     Swagger API imported successfully!
@@ -101,9 +103,27 @@ const Home = () => {
             )}
             <div className="space-y-4">
             {rules.map((rule: any, index: number) => (
-                <Card key={rule._id} className="p-4 shadow-md border border-gray-200">
-                <h5 className="font-semibold text-lg">Import {rules.length -index }</h5>
-                <p className="text-gray-600">{rule.info.description || 'No description available'}</p>
+                <Card 
+                    key={rule._id} 
+                    className="p-5 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-200 bg-white rounded-xl"
+                >
+                    <div className="flex justify-between items-center mb-3">
+                        <h5 className="font-bold text-xl text-gray-900 tracking-tight">
+                            {rule.info.title}
+                        </h5>
+                        <span className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-sm font-semibold">
+                            v{rule.info.version}
+                        </span>
+                    </div>
+                    <p className="text-gray-700 mb-4 line-clamp-2">
+                        {rule.info.description || 'No description available'}
+                    </p>
+                    <div className="flex items-center text-sm text-gray-500">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {new Date(rule.updatedAt).toLocaleString()}
+                    </div>
                 </Card>
             ))}
             </div>
