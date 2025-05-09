@@ -72,24 +72,30 @@ const scanSchema = new mongoose.Schema({
 
 // Calculate summary before saving
 scanSchema.pre('save', function(next) {
+    // Initialize violations count
+    const violations = {
+        critical: 0,
+        high: 0,
+        medium: 0,
+        low: 0
+    };
+
     if (this.results && this.results.length > 0) {
         const total = this.results.length;
         const passed = this.results.filter(r => r.passed).length;
         
-        // Count violations by severity
-        const violations = {
-            critical: 0,
-            high: 0,
-            medium: 0,
-            low: 0
-        };
-
+        // Count violations by severity with proper case handling
         this.results.forEach(result => {
-            result.violations?.forEach(violation => {
-                if (violation.severity) {
-                    violations[violation.severity.toLowerCase()]++;
-                }
-            });
+            if (Array.isArray(result.violations)) {
+                result.violations.forEach(violation => {
+                    if (violation.severity) {
+                        const normalizedSeverity = violation.severity.toLowerCase();
+                        if (violations.hasOwnProperty(normalizedSeverity)) {
+                            violations[normalizedSeverity]++;
+                        }
+                    }
+                });
+            }
         });
 
         this.summary = {
@@ -102,27 +108,39 @@ scanSchema.pre('save', function(next) {
             lowViolations: violations.low
         };
 
-        // Update status and completedAt if needed
-        if (this.status === 'in_progress' && total > 0) {
+        // Update status and completedAt
+        if (this.status === 'in_progress') {
             this.status = 'completed';
             this.completedAt = new Date();
         }
     } else if (this.status === 'failed') {
-        // Ensure summary is initialized for failed scans
+        // For failed scans, keep track of the attempt
         this.summary = {
-            totalEndpoints: 0,
+            totalEndpoints: this.results?.length || 0,
             passedEndpoints: 0,
-            failedEndpoints: 0,
-            criticalViolations: 1, // Count the failure itself as a critical violation
-            highViolations: 0,
-            mediumViolations: 0,
-            lowViolations: 0
+            failedEndpoints: this.results?.length || 1, // At least 1 failure
+            criticalViolations: violations.critical + 1, // Count the failure itself
+            highViolations: violations.high,
+            mediumViolations: violations.medium,
+            lowViolations: violations.low
         };
         
         if (!this.completedAt) {
             this.completedAt = new Date();
         }
+    } else if (!this.summary) {
+        // Initialize summary for new scans
+        this.summary = {
+            totalEndpoints: 0,
+            passedEndpoints: 0,
+            failedEndpoints: 0,
+            criticalViolations: 0,
+            highViolations: 0,
+            mediumViolations: 0,
+            lowViolations: 0
+        };
     }
+
     next();
 });
 
@@ -132,7 +150,6 @@ scanSchema.virtual('passPercentage').get(function() {
         ? (this.summary.passedEndpoints / this.summary.totalEndpoints) * 100 
         : 0;
 });
-
 
 // Add indexes
 scanSchema.index({ status: 1, createdAt: -1 });
