@@ -34,7 +34,17 @@ const apiInfoSchema = new mongoose.Schema({
     description: String,
     url: String,
   },
-  paths: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Request' }],
+  paths: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Request', required:true,}],
 }, { timestamps: true });
+
+// Indexes for better query performance
+apiInfoSchema.index({ 'info.title': 1, 'info.version': 1 }, { unique: true });
+apiInfoSchema.index({ createdAt: -1 });
+apiInfoSchema.index({ 'info.title': 'text' }); // Enable text search on title
+
+// Virtual for API full name
+apiInfoSchema.virtual('fullName').get(function() {
+  return `${this.info.title} v${this.info.version}`;
+});
 
 module.exports = mongoose.model('ApiInfo', apiInfoSchema);
