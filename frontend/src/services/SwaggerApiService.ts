@@ -2,7 +2,9 @@ import ApiService from './ApiService'
 
 // Define your types
 interface SwaggerResponse {
-    message: string
+    message: string,
+    success: boolean,
+    data:any
 }
 
 interface SwaggerRequest extends Record<string, unknown> {

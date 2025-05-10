@@ -52,7 +52,7 @@ const Home = () => {
             const apiInfo=response.data
             toast.push(
                 <Notification type="success" title="Success">
-                    Swagger API imported successfully!
+                    {response.message}
                 </Notification>,
             )
             setSwaggerUrl('') // Clear the input after success
