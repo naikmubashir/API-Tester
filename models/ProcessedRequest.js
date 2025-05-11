@@ -21,7 +21,7 @@ const processedRequestSchema = new mongoose.Schema({
   scan: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Scan',
-    //required:true,
+    required:true,
   }
 }, { 
   timestamps: true,

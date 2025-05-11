@@ -8,25 +8,29 @@ const mongoose = require('mongoose');
 // Create a new scan
 exports.createScan = async (req, res) => {
     try {
-        const { name, ruleId, requestId } = req.body;
+        const { name, ruleId, requestIds } = req.body;
 
         // Validate inputs
-        if (!name || !ruleId || !requestId) {
+        if (!name || !ruleId || !requestIds || !Array.isArray(requestIds) || requestIds.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required fields'
+                message: 'Missing required fields or invalid request IDs'
             });
         }
         // Verify referenced documents exist
-        const [rule, request] = await Promise.all([
+        const [rule, requests] = await Promise.all([
             YamlRule.findById(ruleId),
-            Request.findById(requestId)
+           // Request.findById(requestId)
+           Request.find({
+            _id: { $in: requestIds }
+        })
+
         ]);
 
-        if (!rule || !request) {
+        if (!rule || (requests.length !== requestIds.length)) {
             return res.status(404).json({
                 success: false,
-                message: !rule ? 'Rule not found' : 'Request not found'
+                message: !rule ? 'Rule not found' : 'One or more requests not found'
             });
         }
 
@@ -34,7 +38,7 @@ exports.createScan = async (req, res) => {
         const scan = new Scan({
             name,
             yamlRule: ruleId,
-            originalRequest: requestId,
+            originalRequest: requestIds,
             status: 'in_progress',
             startedAt: new Date()
         });
@@ -42,12 +46,16 @@ exports.createScan = async (req, res) => {
         await scan.save();
 
         // Start processing in background
-        processScan(scan._id).catch(err => {
+ /*       processScan(scan._id).catch(err => {
 
             console.error('Error processing scan:', err)
             // implement a notification system here
         });
-
+*/      
+        processMultipleRequests(scan._id).catch(err=>{
+            console.error('Error processing scan:', err)
+            // implement a notification system here
+        })
         return res.status(201).json({
             success: true,
             message: 'Scan created successfully',
@@ -239,3 +247,50 @@ exports.deleteScan = async (req, res) => {
     }
 };
 
+
+
+async function processMultipleRequests(scanId) {
+    try {
+        const scan = await Scan.findById(scanId)
+            .populate('yamlRule')
+            .populate('originalRequest');
+
+        if (!scan) throw new Error('Scan not found');
+
+        // Process each request
+        for (const request of scan.originalRequest) {
+            try {
+                const processedRequest = await applyRuleToRequest(
+                    request._id,
+                    scan.yamlRule._id,
+                    scanId
+                );
+
+                // Add result for each processed request
+                const violations = [];
+                if (!processedRequest.isSuccessful) {
+                    violations.push({
+                        rule: 'Response Status Check',
+                        description: `Unexpected response status: ${processedRequest.response?.status || 'No response'}`,
+                        severity: processedRequest.response?.status >= 500 ? 'critical' : 'high'
+                    });
+                }
+
+                scan.results.push({
+                    endpoint: processedRequest.path,
+                    method: processedRequest.method?.toUpperCase() || 'GET',
+                    processedRequest: processedRequest._id,
+                    passed: processedRequest.isSuccessful,
+                    violations
+                });
+
+                await scan.save();
+            } catch (error) {
+                console.error(`Error processing request ${request._id}:`, error);
+            }
+        }
+    } catch (error) {
+        console.error('Error in processMultipleRequests:', error);
+        throw error;
+    }
+}

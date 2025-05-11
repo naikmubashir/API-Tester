@@ -36,7 +36,7 @@ interface CreateScanProps {
 interface ScanFormData {
     name: string
     ruleId: string
-    requestId: string
+    requestIds: string[]
 }
 
 const CreateScan: React.FC<CreateScanProps> = ({
@@ -48,7 +48,7 @@ const CreateScan: React.FC<CreateScanProps> = ({
     const [formData, setFormData] = useState<ScanFormData>({
         name: '',
         ruleId: '',
-        requestId: '',
+        requestIds: [],
     })
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -86,7 +86,7 @@ const CreateScan: React.FC<CreateScanProps> = ({
         }
     }
 
-    const handleInputChange = (field: keyof ScanFormData, value: string) => {
+    const handleInputChange = (field: keyof ScanFormData, value: any) => {
         setFormData((prev) => ({
             ...prev,
             [field]: value,
@@ -95,7 +95,7 @@ const CreateScan: React.FC<CreateScanProps> = ({
 
     const isFormValid = () => {
         return Boolean(
-            formData.name.trim() && formData.ruleId && formData.requestId,
+            formData.name.trim() && formData.ruleId && formData.requestIds.length>0,
         )
     }
 
@@ -112,8 +112,8 @@ const CreateScan: React.FC<CreateScanProps> = ({
     const selectedRule = ruleOptions.find(
         (option) => option.value === formData.ruleId,
     )
-    const selectedRequest = requestOptions.find(
-        (option) => option.value === formData.requestId,
+    const selectedRequests = requestOptions.filter(
+        (option) => formData.requestIds.includes(option.value)
     )
 
     return (
@@ -155,24 +155,24 @@ const CreateScan: React.FC<CreateScanProps> = ({
                     </FormItem>
 
                     <FormItem
-                        label="Select Request"
-                        invalid={
-                            !formData.requestId && formData.requestId !== ''
-                        }
-                        errorMessage="Please select a request"
-                    >
-                        <Select<SelectOption>
-                            value={selectedRequest}
-                            onChange={(option: SelectOption | null) => {
-                                if (option) {
-                                    handleInputChange('requestId', option.value)
-                                }
-                            }}
-                            options={requestOptions}
-                            placeholder="Select a request"
-                            isDisabled={loading || requests.length === 0}
-                        />
-                    </FormItem>
+    label="Select 1 or more Requests"
+    invalid={!formData.requestIds}
+    errorMessage="Please select at least one request"
+>
+    <Select
+        isMulti
+        value={selectedRequests}
+        onChange={(options) => {
+            handleInputChange('requestIds', options ? options.map(opt => opt.value) : []);
+        }}
+        options={requestOptions}
+        placeholder="Select multiple requests"
+        isDisabled={loading || requests.length === 0}
+        closeMenuOnSelect={false}  // Keeps the menu open after selection
+        // isLoading={loading}
+    />
+</FormItem>
+
 
                     <div className="flex gap-2 mt-6">
                         <Button

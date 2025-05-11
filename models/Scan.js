@@ -39,11 +39,11 @@ const scanSchema = new mongoose.Schema({
         ref: 'YamlRule',
         required: true
     },
-    originalRequest: {
+    originalRequest: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Request',
         required: true
-    },
+    }],
     status: {
         type: String,
         enum: ['in_progress', 'completed', 'failed'],
@@ -98,6 +98,9 @@ scanSchema.pre('save', function(next) {
             }
         });
 
+        // Compare results count with original requests count to determine completion
+        const isComplete = this.results.length === this.originalRequest.length;
+
         this.summary = {
             totalEndpoints: total,
             passedEndpoints: passed,
@@ -109,7 +112,7 @@ scanSchema.pre('save', function(next) {
         };
 
         // Update status and completedAt
-        if (this.status === 'in_progress') {
+        if (this.status === 'in_progress' && isComplete) {
             this.status = 'completed';
             this.completedAt = new Date();
         }

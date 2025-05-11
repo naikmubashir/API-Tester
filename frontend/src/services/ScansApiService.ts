@@ -61,7 +61,7 @@ export interface Scan {
 interface CreateScanPayload {
     name: string
     ruleId: string
-    requestId: string
+    requestIds: string[]
 }
 
 interface ApiResponse<T> {
