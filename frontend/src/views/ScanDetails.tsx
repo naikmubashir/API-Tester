@@ -61,6 +61,7 @@ const ScanDetails = () => {
     const [scan, setScan] = useState<Scan | null>(null)
     const [loading, setLoading] = useState(true)
     const [pollingInterval, setPollingInterval] = useState<number | null>(null)
+    const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set())
 
     const fetchScanDetails = async () => {
         if (!id) return
@@ -257,102 +258,130 @@ const ScanDetails = () => {
                                     <Card
                                         key={`${result.endpoint}-${index}`}
                                         bordered={true}
-                                        className="p-4"
+                                        className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                        onClick={() => {
+                                            setExpandedCards((prev) => {
+                                                const newSet = new Set(prev)
+                                                if (newSet.has(index)) {
+                                                    newSet.delete(index)
+                                                } else {
+                                                    newSet.add(index)
+                                                }
+                                                return newSet
+                                            })
+                                        }}
                                     >
                                         <div className="space-y-4">
-                                            {/* Header with status and endpoint */}
-                                            <div className="flex items-center gap-2">
-                                                <span
-                                                    className={`px-2 py-1 rounded text-sm ${
-                                                        result.passed
-                                                            ? 'bg-green-100 text-green-700'
-                                                            : 'bg-red-100 text-red-700'
-                                                    }`}
-                                                >
-                                                    {result.passed
-                                                        ? 'PASSED'
-                                                        : 'FAILED'}
-                                                </span>
-                                                <span className="font-mono">
-                                                    {result.method}{' '}
-                                                    {result.endpoint}
+                                            {/* Header with status and endpoint - Always visible */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span
+                                                        className={`px-2 py-1 rounded text-sm ${
+                                                            result.passed
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : 'bg-red-100 text-red-700'
+                                                        }`}
+                                                    >
+                                                        {result.passed
+                                                            ? 'PASSED'
+                                                            : 'FAILED'}
+                                                    </span>
+                                                    <span className="font-mono">
+                                                        {result.method}{' '}
+                                                        {result.endpoint}
+                                                    </span>
+                                                </div>
+                                                <span className="text-gray-400">
+                                                    {expandedCards.has(index)
+                                                        ? '▼'
+                                                        : '▶'}
                                                 </span>
                                             </div>
 
-                                            {/* Violations section */}
-                                            {result.violations?.length > 0 && (
-                                                <div className="mt-2">
-                                                    <h4 className="text-sm font-semibold mb-2">
-                                                        Violations:
-                                                    </h4>
-                                                    <div className="pl-4 space-y-2">
-                                                        {result.violations.map(
-                                                            (
-                                                                violation,
-                                                                vIndex,
-                                                            ) => (
-                                                                <div
-                                                                    key={vIndex}
-                                                                    className="p-2 rounded bg-gray-50"
-                                                                >
-                                                                    <div
-                                                                        className={`text-sm ${severityColors[violation.severity]} font-semibold`}
-                                                                    >
-                                                                        {
-                                                                            violation.rule
-                                                                        }
-                                                                    </div>
-                                                                    <div className="text-sm text-gray-600 mt-1">
-                                                                        {
-                                                                            violation.description
-                                                                        }
-                                                                    </div>
-                                                                    <div className="text-xs text-gray-500 mt-1">
-                                                                        Severity:{' '}
-                                                                        {
-                                                                            violation.severity
-                                                                        }
-                                                                    </div>
-                                                                </div>
-                                                            ),
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Request Details */}
-                                            {result.processedRequest && (
-                                                <div className="mt-2">
-                                                    <h4 className="text-sm font-semibold mb-2">
-                                                        Response Details:
-                                                    </h4>
-                                                    <div className="pl-4 space-y-2">
-                                                        <div className="text-sm text-gray-600">
-                                                            Status:{' '}
-                                                            {result
-                                                                .processedRequest
-                                                                .response
-                                                                ?.status ||
-                                                                'N/A'}
-                                                        </div>
-                                                        {result.processedRequest
-                                                            .response && (
-                                                            <div className="text-sm">
-                                                                <div className="font-semibold text-gray-600 mb-1">
-                                                                    Response:
-                                                                </div>
-                                                                <pre className="bg-gray-50 p-2 rounded overflow-auto text-sm">
-                                                                    {JSON.stringify(
-                                                                        result
-                                                                            .processedRequest
-                                                                            .response,
-                                                                        null,
-                                                                        2,
-                                                                    )}
-                                                                </pre>
+                                            {/* Expanded content - Only visible when card is expanded */}
+                                            {expandedCards.has(index) && (
+                                                <div className="mt-4 border-t pt-4">
+                                                    {/* Violations section */}
+                                                    {result.violations?.length >
+                                                        0 && (
+                                                        <div className="mt-2">
+                                                            <h4 className="text-sm font-semibold mb-2">
+                                                                Violations:
+                                                            </h4>
+                                                            <div className="pl-4 space-y-2">
+                                                                {result.violations.map(
+                                                                    (
+                                                                        violation,
+                                                                        vIndex,
+                                                                    ) => (
+                                                                        <div
+                                                                            key={
+                                                                                vIndex
+                                                                            }
+                                                                            className="p-2 rounded bg-gray-50"
+                                                                        >
+                                                                            <div
+                                                                                className={`text-sm ${severityColors[violation.severity]} font-semibold`}
+                                                                            >
+                                                                                {
+                                                                                    violation.rule
+                                                                                }
+                                                                            </div>
+                                                                            <div className="text-sm text-gray-600 mt-1">
+                                                                                {
+                                                                                    violation.description
+                                                                                }
+                                                                            </div>
+                                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                                Severity:{' '}
+                                                                                {
+                                                                                    violation.severity
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    ),
+                                                                )}
                                                             </div>
-                                                        )}
-                                                    </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Request Details */}
+                                                    {result.processedRequest && (
+                                                        <div className="mt-2">
+                                                            <h4 className="text-sm font-semibold mb-2">
+                                                                Response
+                                                                Details:
+                                                            </h4>
+                                                            <div className="pl-4 space-y-2">
+                                                                <div className="text-sm text-gray-600">
+                                                                    Status:{' '}
+                                                                    {result
+                                                                        .processedRequest
+                                                                        .response
+                                                                        ?.status ||
+                                                                        'N/A'}
+                                                                </div>
+                                                                {result
+                                                                    .processedRequest
+                                                                    .response && (
+                                                                    <div className="text-sm">
+                                                                        <div className="font-semibold text-gray-600 mb-1">
+                                                                            Response:
+                                                                        </div>
+                                                                        <pre className="bg-gray-50 p-2 rounded overflow-auto text-sm">
+                                                                            {JSON.stringify(
+                                                                                result
+                                                                                    .processedRequest
+                                                                                    .response,
+                                                                                null,
+                                                                                2,
+                                                                            )}
+                                                                        </pre>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
