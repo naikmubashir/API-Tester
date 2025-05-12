@@ -1,8 +1,8 @@
 import { Button, Card, Notification, toast } from "@/components/ui";
 import { apiGetAllYamlRules, YamlRule } from "@/services/YamlRulesService";
 import { useState } from "react";
-import RulesComponent from "@/components/RulesComponent";
-import RuleForm from "@/components/RuleForm";
+import YamlRulesComponent from "@/components/YamlRulesComponent";
+import YamlRuleForm from "@/components/YamlRuleForm";
 
 const Rules = () => {
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -29,13 +29,13 @@ const Rules = () => {
             </div>
 
             {showCreateForm && (
-                <RuleForm
+                <YamlRuleForm
                     onSuccess={handleCreateSuccess}
                 />
             )}
 
             {editingRule && (
-                <RuleForm
+                <YamlRuleForm
                     isEdit
                     initialData={editingRule}
                     ruleId={editingRule._id}
@@ -44,7 +44,7 @@ const Rules = () => {
             )}
 
             {!showCreateForm && !editingRule && (
-                <RulesComponent 
+                <YamlRulesComponent 
                     onEdit={setEditingRule}
                 />
             )}

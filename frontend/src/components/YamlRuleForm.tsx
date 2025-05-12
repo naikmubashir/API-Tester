@@ -2,27 +2,27 @@ import React, { useEffect, useState } from 'react';
 import { Button, Input, Notification, toast } from './ui';
 import { apiCreateNewYamlRule, apiUpdateYamlRule } from '@/services/YamlRulesService';
 
-interface RuleForm {
+interface YamlRuleForm {
   name: string;
   description?: string;
   content: string;
 }
 
-interface RuleFormProps {
-  initialData?: RuleForm;
+interface YamlRuleFormProps {
+  initialData?: YamlRuleForm;
   ruleId?: string;
   isEdit?: boolean;
   onSuccess?: () => void;
 }
 
-const RuleForm: React.FC<RuleFormProps> = ({ 
+const YamlRuleForm: React.FC<YamlRuleFormProps> = ({ 
   initialData, 
   ruleId, 
   isEdit = false,
   onSuccess 
 }) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<RuleForm>({
+  const [formData, setFormData] = useState<YamlRuleForm>({
     name: '',
     description: '',
     content: ''
@@ -147,4 +147,4 @@ const RuleForm: React.FC<RuleFormProps> = ({
   );
 };
 
-export default RuleForm;
+export default YamlRuleForm;
