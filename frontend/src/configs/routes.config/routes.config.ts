@@ -13,9 +13,9 @@ export const protectedRoutes: Routes = [
         authority: [],
     },
     {
-        key: 'rules',
-        path: '/rules',
-        component: lazy(() => import('@/views/Rules')),
+        key: 'yamlrules',
+        path: '/yamlrules',
+        component: lazy(() => import('@/views/YamlRules')),
         authority: [],
     },
     {
