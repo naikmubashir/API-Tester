@@ -12,6 +12,7 @@ const fetch= require('./routes/fetch.route')
 const yamlRules= require('./routes/yamlRules.route')
 const processedRequests= require('./routes/processedRequest.route');
 const scan=require('./routes/scan.route');
+const rules=require('./routes/rules.route')
 
 connectDb();
 
@@ -22,6 +23,7 @@ app.use('/api/fetch',fetch)
 app.use('/api/yaml-rules', yamlRules);
 app.use('/api/processed-requests',processedRequests);
 app.use('/api/scans', scan);
+app.use('/api/rules', rules);
 
 
 // Serve static files from the React frontend app
