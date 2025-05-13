@@ -1,6 +1,9 @@
+require('dotenv').config();
 const express= require('express');
 const path= require('path')
+const cors = require('cors');
 const app= express();
+app.use(cors());
 const PORT= process.env.PORT || 4000;
 
 const connectDb = require('./config/connectDb');
@@ -9,7 +12,6 @@ const fetch= require('./routes/fetch.route')
 const yamlRules= require('./routes/yamlRules.route')
 const processedRequests= require('./routes/processedRequest.route');
 const scan=require('./routes/scan.route');
-require('dotenv').config();
 
 connectDb();
 
@@ -25,15 +27,23 @@ app.use('/api/scans', scan);
 // Serve static files from the React frontend app
 if (process.env.NODE_ENV === 'production') {
     // Serve frontend static files
-    app.use(express.static(path.join(__dirname, 'frontend/build')));
-
-    // Handle React routing, return all requests to React app
-    app.get('/*', (req, res) => {
-        res.sendFile(path.resolve(__dirname, 'frontend/build', 'index.html'));
+    const buildPath = path.join(__dirname, 'frontend', 'build');
+    app.use(express.static(buildPath));
+    
+    app.use( (req, res) => {// app.get('*',(req, res)=>{} doesn't work
+        res.sendFile(path.join(buildPath, 'index.html'));
     });
 }
 
-
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        success: false,
+        message: 'Internal Server Error',
+        error: err.message
+    });
+});
 
 app.use((req, res) => {
     res.status(404).json({ 
