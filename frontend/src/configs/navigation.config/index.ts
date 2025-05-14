@@ -57,6 +57,16 @@ const navigationConfig: NavigationTree[] = [
         authority: [],
         subMenu: [],
     },
+    {
+        key: 'vulnerabilities',
+        path: '/vulnerabilities',
+        title: 'Vulnerabilities',
+        translateKey: 'nav.vulnerabilities',
+        icon: 'vulnerabilities',
+        type: NAV_ITEM_TYPE_ITEM,
+        authority: [],
+        subMenu: [],
+    },
     // {
     //     key: 'processed-requests',
     //     path: '/processed-requests',

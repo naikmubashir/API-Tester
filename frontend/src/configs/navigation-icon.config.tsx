@@ -11,6 +11,7 @@ import {
     PiScanDuotone,
 } from 'react-icons/pi'
 import { CiImport } from "react-icons/ci";
+import { GrVulnerability } from "react-icons/gr";
 
 export type NavigationIcons = Record<string, JSX.Element>
 
@@ -20,6 +21,7 @@ const navigationIcon: NavigationIcons = {
     requests: <PiStackDuotone/> ,
     dashboard: <PiDiceFourDuotone/> ,
     scans: <PiScanDuotone/> ,
+    vulnerabilities: <GrVulnerability/> ,
     // home: <PiHouseLineDuotone />,
     // singleMenu: <PiAcornDuotone />,
     // collapseMenu: <PiArrowsInDuotone />,
