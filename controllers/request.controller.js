@@ -29,6 +29,50 @@ exports.getAllRequests= async(req, res)=>{
 }
 
 
+// ...existing code...
+
+exports.getRequestsByApiInfo = async (req, res) => {
+    try {
+        const { apiInfoId } = req.params;
+
+        // Validate the apiInfoId
+        if (!apiInfoId) {
+            return res.status(400).json({
+                success: false,
+                message: 'API Info ID is required'
+            });
+        }
+
+        // Find all requests for this API Info
+        const requests = await Request.find({ apiInfo: apiInfoId })
+            .populate({
+                path: 'apiInfo',
+                select: 'info.title info.version host',
+                options: { virtuals: true }
+            })
+            .exec();
+
+        const plainRequests = requests.map(doc => doc.toJSON({ virtuals: true }));
+
+        console.log(`Successfully retrieved ${requests.length} requests for API Info ${apiInfoId}`);
+        
+        return res.status(200).json({
+            success: true,
+            message: 'Requests retrieved successfully',
+            count: requests.length,
+            data: plainRequests
+        });
+
+    } catch (error) {
+        console.error('Error retrieving requests by API Info:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve requests',
+            error: error.message
+        });
+    }
+};
+
 exports.deleteRequest = async (req, res) => {
     try {
         const { id } = req.params;
