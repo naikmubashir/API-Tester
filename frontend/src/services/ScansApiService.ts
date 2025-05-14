@@ -47,8 +47,8 @@ interface ScanSummary {
 export interface Scan {
     _id: string
     name: string
-    yamlRule: string
-    originalRequest: string
+    ruleId: string
+    originalRequest: string[] | { _id: string, path: string }[] | any
     status: 'in_progress' | 'completed' | 'failed'
     results: EndpointResult[]
     summary: ScanSummary

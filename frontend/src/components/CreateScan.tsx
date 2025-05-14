@@ -66,6 +66,7 @@ const CreateScan: React.FC<CreateScanProps> = ({
         setLoading(true)
 
         try {
+            console.log('FORM',formData)
             const response = await apiCreateScan(formData)
             toast.push(
                 <Notification type="success" title="Success">

@@ -78,7 +78,7 @@ const ScanHistory = () => {
                                         Endpoints
                                     </div>
                                     <div className="text-3xl font-extrabold text-gray-900 font-mono">
-                                        {scan.summary.totalEndpoints}
+                                        {scan.summary?.totalEndpoints}
                                     </div>
                                 </div>
                                 <div className="p-2">
@@ -86,7 +86,7 @@ const ScanHistory = () => {
                                         Success
                                     </div>
                                     <div className="text-3xl font-extrabold text-green-600 font-mono">
-                                        {scan.summary.passedEndpoints}
+                                        {scan.summary?.passedEndpoints}
                                     </div>
                                 </div>
                                 <div className="p-2">
@@ -94,7 +94,7 @@ const ScanHistory = () => {
                                         Failed
                                     </div>
                                     <div className="text-3xl font-extrabold text-red-600 font-mono">
-                                        {scan.summary.failedEndpoints}
+                                        {scan.summary?.failedEndpoints}
                                     </div>
                                 </div>
                             </div>
