@@ -34,6 +34,13 @@ export async function apiGetAllRequests() {
         method: 'get',
     })
 }
+export async function apiGetRequestsByApiInfo(apiInfoId:string){
+    return ApiService.fetchDataWithAxios({
+        url:`/requests/by-apiinfo/${apiInfoId}`,
+        method: 'get',
+    })
+}
+
 
 // Define interface for delete response
 interface DeleteResponse {

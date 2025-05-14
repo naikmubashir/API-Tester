@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
     Button,
     Input,
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui'
 import { apiCreateScan } from '@/services/ScansApiService'
 import { useNavigate } from 'react-router-dom'
+import { apiGetRequestsByApiInfo } from '@/services/SwaggerApiService'
 
 interface Rule {
     _id: string
@@ -32,6 +33,13 @@ interface SelectOption {
 interface CreateScanProps {
     rules: Rule[]
     requests: Request[]
+    apiInfos: {
+        _id: string
+        info: {
+            title: string
+            version: string
+        }
+    }[]
 }
 
 interface ScanFormData {
@@ -43,6 +51,7 @@ interface ScanFormData {
 const CreateScan: React.FC<CreateScanProps> = ({
     rules = [],
     requests = [],
+    apiInfos = [],
 }) => {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
@@ -51,6 +60,7 @@ const CreateScan: React.FC<CreateScanProps> = ({
         ruleId: '',
         requestIds: [],
     })
+    const [selectedApi, setSelectedApi] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -117,7 +127,24 @@ const CreateScan: React.FC<CreateScanProps> = ({
     const selectedRequests = requestOptions.filter(
         (option) => formData.requestIds.includes(option.value)
     )
+    // Create API options for the dropdown
+    const apiOptions = apiInfos.map((api) => ({
+        label: `${api.info.title} v${api.info.version}`,
+        value: api._id
+    }));
+    // Handle API selection
+    const handleApiSelection =async (apiId: string | null) => {
+        if (!apiId) {
+            setSelectedApi(null);
+            return;
+        }
+            const response = await apiGetRequestsByApiInfo(apiId);
+            const requests=response.data;
+             const requestIds = requests.map((req: any) => req._id);
 
+            setSelectedApi(apiId);
+            handleInputChange('requestIds', requestIds);
+    };
     return (
         <Card className="max-w-2xl mx-auto p-6">
 
@@ -156,9 +183,23 @@ const CreateScan: React.FC<CreateScanProps> = ({
                             isDisabled={loading || rules.length === 0}
                         />
                     </FormItem>
-
                     <FormItem
-    label="Select 1 or more Requests"
+                        label="Select API (Optional)"
+                        helper="Select an API to include all its endpoints"
+                    >
+                        <Select<SelectOption>
+                            value={apiOptions.find(opt => opt.value === selectedApi)}
+                            onChange={(option: SelectOption | null) => {
+                                handleApiSelection(option?.value || null);
+                            }}
+                            options={apiOptions}
+                            placeholder="Select an API to include all endpoints"
+                            isDisabled={loading}
+                            isClearable
+                        />
+                    </FormItem>
+                    <FormItem
+    label="Select Individual Requests"
     invalid={!formData.requestIds}
     errorMessage="Please select at least one request"
 >
@@ -167,10 +208,12 @@ const CreateScan: React.FC<CreateScanProps> = ({
         value={selectedRequests}
         onChange={(options) => {
             handleInputChange('requestIds', options ? options.map(opt => opt.value) : []);
+             // Clear API selection if manually selecting requests
+            if (selectedApi) setSelectedApi(null);
         }}
         options={requestOptions}
         placeholder="Select multiple requests"
-        isDisabled={loading || requests.length === 0}
+        isDisabled={loading || requests.length === 0 }
         closeMenuOnSelect={false}  // Keeps the menu open after selection
         // isLoading={loading}
     />

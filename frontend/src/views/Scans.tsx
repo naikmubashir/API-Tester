@@ -5,6 +5,7 @@ import { apiGetAllRequests } from '@/services/SwaggerApiService'
 import { apiGetAllRules, Rule } from '@/services/RulesApiService'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { apiGetAllSwaggers } from '@/services/SwaggerApiService';
 
 
 const Scan = () => {
@@ -14,6 +15,20 @@ const Scan = () => {
   const [rules, setRules] = useState<Rule[]>([]);
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
+  const [apiInfos, setApiInfos] = useState([]);
+  
+  useEffect(() => {
+        const fetchApiInfos = async () => {
+            try {
+                const response = await apiGetAllSwaggers();
+                setApiInfos(response.data);
+            } catch (error) {
+                console.error('Failed to fetch API infos:', error);
+            }
+        };
+        
+        fetchApiInfos();
+    }, []);
 
   const handleNewScan=()=>{
     console.log('Opening new view')
@@ -97,6 +112,7 @@ const Scan = () => {
             <CreateScan 
             rules={rules} 
             requests={requests}
+            apiInfos={apiInfos}
             onCancel={() => navigate('/scans')}
         />
           )
