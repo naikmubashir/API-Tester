@@ -1,140 +1,110 @@
-const yaml = require('js-yaml');
-const axios= require('axios')
-const Request = require('../models/Request');
-const YamlRule = require('../models/YamlRule');
-const ProcessedRequest = require('../models/ProcessedRequest');
- const applyRuleToRequest= async(requestId, ruleId, scanId)=>{
-     // 1. Load both documents
-  const [reqDoc, ruleDoc] = await Promise.all([
-    Request.findById(requestId),
-    YamlRule.findById(ruleId),
-  ]);
-  if (!reqDoc)  throw new Error('Request not found');
-  if (!ruleDoc) throw new Error('Rule not found');
-  console.log('QQQ',reqDoc);
-  const newDoc=reqDoc.path.replace('{petId}', '1');
-  console.log('NNN',newDoc)
+const axios = require("axios");
+const Request = require("../models/Request");
+const ProcessedRequest = require("../models/ProcessedRequest");
+const sqlInjectionRule = require("../rules/sql-injection");
+const nosqlInjectionRule = require("../rules/nosql-injection");
+const rateLimitingRule = require("../rules/rate-limiting-bypass");
+const basicAvailabilityTest = require('../rules/basic-availability');
 
-  // 2. Parse the YAML into a JS object
-  let ruleDefinition;
-  try {
-    ruleDefinition = yaml.load(ruleDoc.content);
-    console.log("RRRR",ruleDefinition)
-  } catch (err) {
-    throw new Error('Invalid YAML in rule content');
-  }
+const RULES = {
+  "RULE-1": sqlInjectionRule,
+  "RULE-2": nosqlInjectionRule,
+  "RULE-3": rateLimitingRule,
+  'RULE-4': basicAvailabilityTest
+};
 
-  // 3. Execute the rule logic
-  //    (this is domain-specific:
+const applyRuleToRequest = async (requestId, ruleId, scanId) => {
+  // 1. Load request document
+  const reqDoc = await Request.findById(requestId);
+  if (!reqDoc) throw new Error("Request not found");
+        console.log('[CHECK 6]')
 
-  //match and replace
-  console.log('object',reqDoc)
-  const modifiedPath=ruleOne(reqDoc,'{petId}','1');
-  console.log('mPATH',modifiedPath)
-  // Create a new ProcessedRequest with the modified path
-  const processed = new ProcessedRequest({
-    path: modifiedPath,
-    method: reqDoc.method,
-    scan: scanId,
-    request: {
-        body: reqDoc.body,
-        headers: reqDoc.headers,
-        query: reqDoc.query
-    }
-  });
-   // Make actual HTTP request
-   try {
-    const method = reqDoc.method?.toLowerCase() || 'get';
-    const fullUrl = `${process.env.HOST}${modifiedPath}`;
-    console.log("MMMModified",fullUrl)
-    console.log("MMMModified",method)
-    
-    const response = await axios({
-        method:method,
-        url: fullUrl,
-        headers: processed.request.headers,
-        data: processed.request.body,
-        params: processed.request.query
-    });
+  // 2. Get the appropriate rule
+  const rule = RULES[ruleId];
+  if (!rule) throw new Error("Rule not found");
 
-    processed.response = {
-        status: response.status,
-        headers: response.headers,
-        body: response.data
-    };
-} catch (error) {
-    processed.response = {
-        status: error.response?.status || 500,
-        error: error.message
-    };
-}
+  // 3. Execute the rule transformation
+  const modifiedRequests = rule.transform(reqDoc);
+          console.log('[CHECK 7]', 'TRANSFORMED',modifiedRequests)
 
-return await processed.save();
-  
-}
-
-const ruleOne=(originalRequest,matchText, replaceText)=>{
-  return originalRequest.path.replace(matchText, replaceText);
-}
-
-
-
-const applyRuleToAllRequests= async (ruleId, scanId)=>{
-  const [reqDocs, ruleDoc] = await Promise.all([
-    Request.find(),
-    YamlRule.findById(ruleId),
-  ]);
-  if (!ruleDoc) throw new Error('Rule not found');
-  //const ruleDefinition = yaml.load(ruleDoc.content);
-  const relevantRequests = reqDocs.filter(doc => doc.path.includes('{petId}'));
-
-  // const promises = relevantRequests.map(reqDoc => {
-  //   //const modifiedPath = ruleOne(reqDoc, ruleDefinition);
-  //   const modifiedPath = ruleOne(reqDoc, '{petId','1');
-  //   const processed = new ProcessedRequest({
-  //     path: modifiedPath,
-  //     methods: reqDoc.methods
-  //   });
-  //   return processed.save();
-  // });
-  // const results = await Promise.allSettled(promises);
-  // results.forEach((res, i) => {
-  //   if (res.status === 'fulfilled') {
-  //     console.log(`Processed request ${i} saved:`, res.value);
-  //   } else {
-  //     console.error(`Failed to process request ${i}:`, res.reason);
-  //   }
-  // });
-  
-
+  // Process and store each modified request
   const processedRequests = await Promise.all(
-    relevantRequests.map(async (req) => {
-        return await applyRuleToRequest(req._id, ruleId, scanId);
+    modifiedRequests.map(async (modifiedReq) => {
+              console.log('[CHECK 8]')
+
+      const processed = new ProcessedRequest({
+        path: modifiedReq.path || reqDoc.path,
+        method: modifiedReq.method || reqDoc.method,
+        scan: scanId,
+        request: {
+          body: modifiedReq.body || reqDoc.body,
+          headers: modifiedReq.headers || reqDoc.headers,
+          query: modifiedReq.query || reqDoc.query,
+        },
+      });
+        console.log('[CHECK 9]')
+
+      try {
+        const method = processed.method?.toLowerCase() || "get";
+        const fullUrl = `${process.env.HOST}${processed.path}`;
+
+        const response = await axios({
+          method,
+          url: fullUrl,
+          headers: processed.request.headers,
+          data: processed.request.body,
+          params: processed.request.query,
+        });
+        console.log('[CHECK 10]')
+
+        processed.response = {
+          status: response.status,
+          headers: response.headers,
+          body: response.data,
+        };
+
+        // Apply rule's response check
+        const checkResult = rule.checkResponse(processed.response);
+        console.log('CheCKReSULT',checkResult)
+        processed.vulnerabilities = checkResult;
+      } catch (error) {
+        processed.response = {
+          status: error.response?.status || 500,
+          error: error.message,
+        };
+        // Even for errors, check the response
+        processed.vulnerabilities = rule.checkResponse(processed.response);
+      }
+
+      return processed.save();
     })
   );
 
-
   return processedRequests;
+};
 
-}
+const applyRuleToAllRequests = async (ruleId, scanId) => {
+  // Get all requests
+  const reqDocs = await Request.find();
 
-const sendHttpRequestsToSavedPath= async(processedRequests)=>{
-  for (const processed of processedRequests) {
-    try {
-      const method = Object.keys(processed.methods)[0] || 'get'; // e.g., 'post'
-      const fullUrl = `${process.env.HOST}${processed.path}`;
+  // Get the appropriate rule
+  const rule = RULES[ruleId];
+  if (!rule) throw new Error("Rule not found");
 
-      const response = await axios({
-        method,
-        url: fullUrl,
-        // Optionally add data or headers here
-      });
+  // Process all requests
+  const processedRequests = await Promise.all(
+    reqDocs.map(async (req) => {
+      return await applyRuleToRequest(req._id, ruleId, scanId);
+    })
+  );
 
-      console.log(`✅ ${method.toUpperCase()} ${processed.path} -> Status: ${response.status}`);
-    } catch (err) {
-      console.error(`❌ Error calling ${processed.path}:`, err.message);
-    }
-  }
-}
+  // Flatten the array since each request might generate multiple processed requests
+  return processedRequests.flat();
+};
 
-module.exports= {applyRuleToRequest, applyRuleToAllRequests}
+// Export the functions and rules that need to be used by other modules
+module.exports = {
+  RULES,
+  applyRuleToRequest,
+  applyRuleToAllRequests,
+};
