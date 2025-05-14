@@ -34,10 +34,10 @@ const scanSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    yamlRule: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'YamlRule',
-        required: true
+    ruleId: {
+        type: String,
+        required: true,
+        enum: ['RULE-1', 'RULE-2', 'RULE-3','RULE-4'] // IDs of our JavaScript rules
     },
     originalRequest: [{
         type: mongoose.Schema.Types.ObjectId,
@@ -98,8 +98,24 @@ scanSchema.pre('save', function(next) {
             }
         });
 
-        // Compare results count with original requests count to determine completion
-        const isComplete = this.results.length === this.originalRequest.length;
+        // Improved completion check
+        const expectedPerRequest = {
+            'RULE-1': 6, // SQLi
+            'RULE-2': 6, // NoSQLi
+            'RULE-3': 1,  // Rate limit (could be more, but 1 result per request)
+            'RULE-4': 1,
+        };
+        const expectedResults = (expectedPerRequest[this.ruleId] || 1) * this.originalRequest.length;
+        console.log('RULEID',this.ruleId,'---',expectedResults)
+        // Each originalRequest must have at least one result
+        // const allRequestsProcessed = this.originalRequest.every(reqId =>
+        //     this.results.some(r =>
+        //         r.processedRequest && r.processedRequest.toString && r.processedRequest.toString() === reqId.toString()
+        //     )
+        // );
+
+        const isComplete =  this.results.length >= expectedResults;
+
 
         this.summary = {
             totalEndpoints: total,
