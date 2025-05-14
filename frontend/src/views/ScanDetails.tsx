@@ -90,7 +90,10 @@ const ScanDetails = () => {
     }
 
     useEffect(() => {
+        let mounted = true;
         const poll = async () => {
+            if (!mounted || !id) return;
+
             const shouldContinuePolling = await fetchScanDetails()
             if (!shouldContinuePolling) {
                 setLoading(false)
@@ -112,6 +115,7 @@ const ScanDetails = () => {
 
         // Cleanup
         return () => {
+            mounted = false;
             if (pollingInterval) {
                 clearInterval(pollingInterval)
             }
@@ -122,12 +126,19 @@ const ScanDetails = () => {
         if (!scan) return
 
         try {
+            // First clear the polling interval
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            setPollingInterval(null);
+        }
             await apiDeleteScan(scan._id)
             toast.push(
                 <Notification type="success" title="Success">
                     Scan deleted successfully
                 </Notification>,
             )
+            // Clear the scan data before navigating
+        setScan(null);
             navigate('/scans')
         } catch (error) {
             toast.push(
