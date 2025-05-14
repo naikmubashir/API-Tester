@@ -1,8 +1,8 @@
 const Scan = require('../models/Scan');
-const YamlRule = require('../models/YamlRule');
 const Request = require('../models/Request');
 const ProcessedRequest = require('../models/ProcessedRequest');
 const { applyRuleToRequest } = require('../services/rule.service');
+const { RULES } = require('../services/rule.service');
 const mongoose = require('mongoose');
 
 // Create a new scan
@@ -17,15 +17,11 @@ exports.createScan = async (req, res) => {
                 message: 'Missing required fields or invalid request IDs'
             });
         }
-        // Verify referenced documents exist
-        const [rule, requests] = await Promise.all([
-            YamlRule.findById(ruleId),
-           // Request.findById(requestId)
-           Request.find({
+        // Verify that the rule exists and get requests
+        const rule = RULES[ruleId];
+        const requests = await Request.find({
             _id: { $in: requestIds }
-        })
-
-        ]);
+        });
 
         if (!rule || (requests.length !== requestIds.length)) {
             return res.status(404).json({
@@ -33,25 +29,29 @@ exports.createScan = async (req, res) => {
                 message: !rule ? 'Rule not found' : 'One or more requests not found'
             });
         }
-
+        // Validate that all IDs are valid ObjectIDs
+        const validIds = requestIds.every(id => mongoose.Types.ObjectId.isValid(id));
+        if (!validIds) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid request ID format'
+            });
+        }
+        console.log('[CHECK 1]')
         // Create new scan
         const scan = new Scan({
             name,
-            yamlRule: ruleId,
+            ruleId, // Store rule ID directly since we're using JS rules
             originalRequest: requestIds,
             status: 'in_progress',
             startedAt: new Date()
         });
+        console.log('[CHECK 2]')
 
         await scan.save();
+        console.log('[CHECK 3]')
 
-        // Start processing in background
- /*       processScan(scan._id).catch(err => {
-
-            console.error('Error processing scan:', err)
-            // implement a notification system here
-        });
-*/      
+        // Start processing in background    
         processMultipleRequests(scan._id).catch(err=>{
             console.error('Error processing scan:', err)
             // implement a notification system here
@@ -76,7 +76,6 @@ exports.createScan = async (req, res) => {
 exports.getAllScans = async (req, res) => {
     try {
         const scans = await Scan.find()
-            .populate('yamlRule', 'name')
             .populate('originalRequest', 'path')
             .sort('-createdAt');
 
@@ -99,7 +98,6 @@ exports.getAllScans = async (req, res) => {
 exports.getScanById = async (req, res) => {
     try {
         const scan = await Scan.findById(req.params.id)
-            .populate('yamlRule')
             .populate('originalRequest')
             .populate('results.processedRequest');
 
@@ -252,38 +250,53 @@ exports.deleteScan = async (req, res) => {
 async function processMultipleRequests(scanId) {
     try {
         const scan = await Scan.findById(scanId)
-            .populate('yamlRule')
             .populate('originalRequest');
+        console.log('[CHECK 4]')
 
         if (!scan) throw new Error('Scan not found');
 
         // Process each request
         for (const request of scan.originalRequest) {
             try {
-                const processedRequest = await applyRuleToRequest(
+                        console.log('[CHECK 5]')
+
+                const processedRequests = await applyRuleToRequest(
                     request._id,
-                    scan.yamlRule._id,
+                    scan.ruleId,
                     scanId
                 );
+        console.log('[CHECK 11]')
 
-                // Add result for each processed request
-                const violations = [];
-                if (!processedRequest.isSuccessful) {
-                    violations.push({
-                        rule: 'Response Status Check',
-                        description: `Unexpected response status: ${processedRequest.response?.status || 'No response'}`,
-                        severity: processedRequest.response?.status >= 500 ? 'critical' : 'high'
-                    });
-                }
+                // Handle each processed request (there might be multiple due to rule transformations)
+                for (const processedRequest of processedRequests) {
+                    const violations = [];
 
-                scan.results.push({
-                    endpoint: processedRequest.path,
-                    method: processedRequest.method?.toUpperCase() || 'GET',
-                    processedRequest: processedRequest._id,
+                    // Check for response issues
+                    if (!processedRequest.isSuccessful) {
+                        violations.push({
+                            rule: 'Response Status Check',
+                            description: `Unexpected response status: ${processedRequest.response?.status || 'No response'}`,
+                            severity: processedRequest.response?.status >= 500 ? 'critical' : 'high'
+                        });
+                    }
+
+                    // Add any vulnerabilities found by the rule
+                    if (processedRequest.vulnerabilities?.hasError) {
+                        violations.push(...processedRequest.vulnerabilities.details.map(detail => ({
+                            rule: scan.ruleId,
+                            description: detail,
+                            severity: 'high'
+                        })));
+                    }
+
+                    scan.results.push({
+                        endpoint: processedRequest.path,
+                        method: processedRequest.method?.toUpperCase() || 'GET',
+                        processedRequest: processedRequest._id,
                     passed: processedRequest.isSuccessful,
                     violations
                 });
-
+            }
                 await scan.save();
             } catch (error) {
                 console.error(`Error processing request ${request._id}:`, error);
