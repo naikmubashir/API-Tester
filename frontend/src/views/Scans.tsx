@@ -2,7 +2,7 @@ import CreateScan from '@/components/CreateScan'
 import ScanHistory from '@/components/ScanHistory'
 import { Button, Card, Dropdown, Notification, toast } from '@/components/ui'
 import { apiGetAllRequests } from '@/services/SwaggerApiService'
-import { apiGetAllYamlRules, YamlRule } from '@/services/YamlRulesService'
+import { apiGetAllRules, Rule } from '@/services/RulesApiService'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -11,24 +11,26 @@ const Scan = () => {
 
   const navigate = useNavigate()
   const [newScan, setNewScan]=useState(false);
+  const [rules, setRules] = useState<Rule[]>([]);
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const handleNewScan=()=>{
     console.log('Opening new view')
     // navigate('/newscan');
     setNewScan(true)
 
   }
-  const [rules, setRules] = useState<YamlRule[]>([]);
-    const [requests, setRequests] = useState<Request[]>([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const [rulesResponse, requestsResponse] = await Promise.all([
-                    apiGetAllYamlRules(),
+                    apiGetAllRules(),
                     apiGetAllRequests()
                 ]);
-                setRules(rulesResponse.data || []);
+                setRules(rulesResponse.data as Rule[] || []);
+                console.log("RUL",rules)
                 setRequests(requestsResponse.data || []);
             } catch (error) {
                 toast.push(
