@@ -8,6 +8,7 @@ import {
     FormContainer,
     Notification,
     toast,
+    Card,
 } from '@/components/ui'
 import { apiCreateScan } from '@/services/ScansApiService'
 import { useNavigate } from 'react-router-dom'
@@ -118,7 +119,8 @@ const CreateScan: React.FC<CreateScanProps> = ({
     )
 
     return (
-        <div className="max-w-2xl mx-auto p-6">
+        <Card className="max-w-2xl mx-auto p-6">
+
             <h1 className="text-2xl font-bold mb-6">Create New Scan</h1>
             <FormContainer>
                 <Form layout="vertical" onSubmit={handleSubmit}>
@@ -195,7 +197,8 @@ const CreateScan: React.FC<CreateScanProps> = ({
                     </div>
                 </Form>
             </FormContainer>
-        </div>
+
+        </Card>
     )
 }
 
