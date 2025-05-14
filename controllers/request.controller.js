@@ -5,7 +5,7 @@ exports.getAllRequests= async(req, res)=>{
         const requests = await Request.find({})
             .populate({
                 path: 'apiInfo',
-                select: 'info.title info.version',// We still need these fields for the virtual to work
+                select: 'info.title info.version host',// We still need these fields for the virtual to work
                 options: { virtuals: true }  // Enable virtuals in populate
             })
             // Remove .lean() to keep virtuals

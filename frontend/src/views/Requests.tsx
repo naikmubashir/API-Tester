@@ -97,16 +97,21 @@ const handleDeleteAll = async () => {
                     requests.map((req) => (
                         <Card key={req._id} className="hover:shadow-md transition-shadow duration-200">
                             <div className="flex items-center justify-between ">
+                                <div>
 
                                 <div className="flex items-center gap-4">
                                     <span className={`${methodColors[req.method.toLowerCase()] || 'bg-gray-500'} text-white px-3 py-1 rounded-lg text-sm font-medium`}>
                                         {req.method.toUpperCase()}
                                     </span>
                                     <code className="text-gray-700">
-                                        {req.path}
+                                       {req.apiInfo?.host+req.path}
                                     </code>
                                 </div>
-                                    <span className="text-sm text-gray-500">{req.apiInfo?.fullName || 'N/A'}</span>
+
+
+                                    <div className="text-sm text-gray-500 ml-20">{req.apiInfo?.fullName || 'N/A'}</div>
+
+                                </div>
                                 <Button 
                                     variant="plain"
                                     onClick={() => handleDeleteRequest(req._id)}
