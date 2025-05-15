@@ -199,3 +199,38 @@ exports.getAllSwaggers = async (req, res) => {
         });
     }
 };
+
+
+exports.deleteSwagger = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // First find the API to ensure it exists
+        const apiInfo = await ApiInfo.findById(id);
+        if (!apiInfo) {
+            return res.status(404).json({
+                success: false,
+                message: 'API not found'
+            });
+        }
+
+        // Delete all associated requests first
+        await Request.deleteMany({ apiInfo: id });
+
+        // Then delete the API info
+        await ApiInfo.findByIdAndDelete(id);
+
+        return res.status(200).json({
+            success: true,
+            message: 'API and associated requests deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Error deleting API and requests:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to delete API and requests',
+            error: error.message
+        });
+    }
+};
