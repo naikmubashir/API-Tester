@@ -23,6 +23,7 @@ import {
 } from 'react-icons/hi2'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
+import { apiGetAllRules, Rule } from '@/services/RulesApiService'
 
 interface ApiResponse<T> {
     success: boolean
@@ -112,17 +113,17 @@ const Dashboard = () => {
             const [scansRes, requestsRes, rulesRes] = (await Promise.all([
                 apiGetAllScans(),
                 apiGetAllRequests(),
-                apiGetAllYamlRules(),
+                apiGetAllRules(),
             ])) as [
                 ApiResponse<Scan[]>,
                 ApiResponse<Request[]>,
-                ApiResponse<YamlRule[]>,
+                ApiResponse<Rule[]>,
             ]
 
             const scans = scansRes.data || []
             const requests = requestsRes.data || []
             const rules = Array.isArray(rulesRes.data) ? rulesRes.data : []
-
+            console.log('SCANDASHBOARD',scans)
             const completedScans = scans.filter(
                 (scan: Scan) => scan.status === 'completed',
             )
@@ -167,11 +168,11 @@ const Dashboard = () => {
                 }
 
                 // Analyze rules usage and effectiveness
-                if (scan.yamlRule) {
+                if (scan.ruleId) {
                     const ruleName =
-                        typeof scan.yamlRule === 'string'
-                            ? scan.yamlRule
-                            : (scan.yamlRule as YamlRuleRef).name
+                        typeof scan.ruleId === 'string'
+                            ? scan.ruleId
+                            : (scan.ruleId as YamlRuleRef).name
 
                     ruleUsageCount[ruleName] =
                         (ruleUsageCount[ruleName] || 0) + 1
@@ -298,6 +299,21 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <Card className="p-4">
                     <div className="flex items-center">
+                        <span className="p-2 rounded-lg bg-red-100 text-red-600">
+                            <HiExclamationTriangle className="text-2xl" />
+                        </span>
+                        <div className="ml-4">
+                            <h6 className="text-sm text-gray-500">
+                                Total vulnerabilities
+                            </h6>
+                            <h4 className="text-2xl font-bold">
+                                {stats.criticalViolations}
+                            </h4>
+                        </div>
+                    </div>
+                </Card>
+                <Card className="p-4">
+                    <div className="flex items-center">
                         <span className="p-2 rounded-lg bg-blue-100 text-blue-600">
                             <HiBolt className="text-2xl" />
                         </span>
@@ -312,7 +328,7 @@ const Dashboard = () => {
                     </div>
                 </Card>
 
-                <Card className="p-4">
+                {/* <Card className="p-4">
                     <div className="flex items-center">
                         <span className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
                             <HiCheckCircle className="text-2xl" />
@@ -326,25 +342,11 @@ const Dashboard = () => {
                             </h4>
                         </div>
                     </div>
-                </Card>
+                </Card> */}
 
-                <Card className="p-4">
-                    <div className="flex items-center">
-                        <span className="p-2 rounded-lg bg-red-100 text-red-600">
-                            <HiExclamationTriangle className="text-2xl" />
-                        </span>
-                        <div className="ml-4">
-                            <h6 className="text-sm text-gray-500">
-                                Critical Violations
-                            </h6>
-                            <h4 className="text-2xl font-bold">
-                                {stats.criticalViolations}
-                            </h4>
-                        </div>
-                    </div>
-                </Card>
+                
 
-                <Card className="p-4">
+                {/* <Card className="p-4">
                     <div className="flex items-center">
                         <span className="p-2 rounded-lg bg-purple-100 text-purple-600">
                             <HiShieldCheck className="text-2xl" />
@@ -358,9 +360,9 @@ const Dashboard = () => {
                             </h4>
                         </div>
                     </div>
-                </Card>
+                </Card> */}
 
-                <Card className="p-4">
+                {/* <Card className="p-4">
                     <div className="flex items-center">
                         <span className="p-2 rounded-lg bg-indigo-100 text-indigo-600">
                             <HiOutlineClock className="text-2xl" />
@@ -374,7 +376,7 @@ const Dashboard = () => {
                             </h4>
                         </div>
                     </div>
-                </Card>
+                </Card> */}
             </div>
 
             {/* Time-based Analytics */}
@@ -417,7 +419,9 @@ const Dashboard = () => {
                                         : timeRange === 'week'
                                           ? stats.timeStats.weeklyScans
                                           : stats.timeStats.monthlyScans,
-                                ).map(([date, count]) => ({
+                                )
+                                .reverse()
+                                .map(([date, count]) => ({
                                     x: date,
                                     y: count,
                                 })),
@@ -446,7 +450,7 @@ const Dashboard = () => {
             </Card>
 
             {/* Rules Analysis */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 <Card className="p-4">
                     <h4 className="font-bold mb-4">Most Used Rules</h4>
                     <div className="space-y-4">
@@ -504,10 +508,10 @@ const Dashboard = () => {
                         ))}
                     </div>
                 </Card>
-            </div>
+            </div> */}
 
             {/* Response Time Analysis */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 <Card className="p-4">
                     <h4 className="font-bold mb-4">Response Times by Method</h4>
                     <div className="h-[300px]">
@@ -560,7 +564,7 @@ const Dashboard = () => {
                         />
                     </div>
                 </Card>
-            </div>
+            </div> */}
 
             {/* Common Failure Patterns */}
             <Card className="p-4 mb-6">
