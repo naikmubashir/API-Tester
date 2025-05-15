@@ -34,6 +34,12 @@ export async function apiGetAllRequests() {
         method: 'get',
     })
 }
+export async function apiDeleteSwagger(id:string){
+    return ApiService.fetchDataWithAxios({
+        url:`/fetch/${id}`,
+        method: 'delete',
+    })
+}
 export async function apiGetRequestsByApiInfo(apiInfoId:string){
     return ApiService.fetchDataWithAxios({
         url:`/requests/by-apiinfo/${apiInfoId}`,
