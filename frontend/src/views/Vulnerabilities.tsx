@@ -42,18 +42,36 @@ const Vulnerabilities = () => {
                     if (result.violations && result.violations.length > 0) {
                         const existingVuln = acc.find(v => v.endpoint === result.endpoint);
                         
-                        const matchedRules = result.violations.map(v => ({
-                            ruleId: v.rule,
-                            ruleName: getRuleName(v.rule),
-                            severity: v.severity
-                        }));
+                        // Create unique rules based on ruleId and severity
+                        const uniqueRules = Array.from(
+                            new Map(
+                                result.violations.map(v => [
+                                    `${v.rule}-${v.severity}`,
+                                    {
+                                        ruleId: v.rule,
+                                        ruleName: getRuleName(v.rule),
+                                        severity: v.severity
+                                    }
+                                ])
+                            ).values()
+                        );
 
                         if (existingVuln) {
-                            existingVuln.matchedRules.push(...matchedRules);
+                            // Merge unique rules
+                            const allRules = [...existingVuln.matchedRules, ...uniqueRules];
+                            existingVuln.matchedRules = Array.from(
+                                new Map(
+                                    allRules.map(rule => [
+                                        `${rule.ruleId}-${rule.severity}`,
+                                        rule
+                                    ])
+                                ).values()
+                            );
                         } else {
                             acc.push({
                                 endpoint: result.endpoint,
-                                matchedRules
+                                matchedRules:uniqueRules,
+                                method:result.method
                             });
                         }
                     }
@@ -106,8 +124,15 @@ const Vulnerabilities = () => {
                         ) : (
                             vulnerabilities.map((vuln, index) => (
                                 <Tr key={index}>
-                                    <Td className="font-semibold">
-                                        {vuln.endpoint}
+                                    <Td >
+                                        <div className="flex items-center">
+                                            <span className="mr-2 px-2 py-1 rounded-md  text-gray text-sm uppercase font-bold">
+                                                {vuln?.method}
+                                            </span>
+                                            <span className="text-gray-700 hover:text-blue-600 transition-colors">
+                                                {vuln.endpoint}
+                                            </span>
+                                        </div>
                                     </Td>
                                     <Td>
                                         <div className="flex flex-wrap gap-2">

@@ -157,7 +157,7 @@ const Home = () => {
                         </span>
                          <Button
                         variant="plain"
-                        color="red"
+                        className="text-red-500 hover:text-red-600"
                         size="sm"
                         onClick={() => handleDeleteClick(rule._id, rule.info.title)}
                         icon={

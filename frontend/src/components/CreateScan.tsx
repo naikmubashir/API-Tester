@@ -80,7 +80,7 @@ const CreateScan: React.FC<CreateScanProps> = ({
             console.log('FORM',formData)
             const response = await apiCreateScan(formData)
             toast.push(
-                <Notification type="success" title="Success">
+                <Notification type="info" title="Success">
                     Scan has been initiated successfully
                 </Notification>,
             )
