@@ -2,6 +2,7 @@ require('dotenv').config();
 const express= require('express');
 const path= require('path')
 const cors = require('cors');
+const mongoose = require('mongoose');
 const app= express();
 app.use(cors());
 const PORT= process.env.PORT || 4000;
@@ -13,6 +14,39 @@ const yamlRules= require('./routes/yamlRules.route')
 const processedRequests= require('./routes/processedRequest.route');
 const scan=require('./routes/scan.route');
 const rules=require('./routes/rules.route')
+
+// Health Check endpoint
+app.get('/health', async (req, res) => {
+    try {
+        // Check MongoDB connection
+        const dbState = mongoose.connection.readyState;
+        const dbStatus = {
+            0: 'disconnected',
+            1: 'connected',
+            2: 'connecting',
+            3: 'disconnecting'
+        };
+
+        res.json({
+            status: 'healthy',
+            timestamp: new Date(),
+            uptime: process.uptime(),
+            database: {
+                state: dbStatus[dbState],
+                healthy: dbState === 1
+            },
+            memory: {
+                heapUsed: process.memoryUsage().heapUsed / 1024 / 1024,
+                heapTotal: process.memoryUsage().heapTotal / 1024 / 1024
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'unhealthy',
+            error: error.message
+        });
+    }
+});
 
 connectDb();
 
