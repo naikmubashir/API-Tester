@@ -26,7 +26,12 @@ async function makeRateLimitedRequest(requestFn, maxRetries = 3) {
 
     while (attempt < maxRetries) {
         try {
-            return await requestFn();
+            const response = await requestFn();
+            // Add response validation
+            if (!response || !response.data) {
+                throw new Error('Invalid response received');
+            }
+            return response;
         } catch (error) {
             attempt++;
             lastError = error;
@@ -72,13 +77,13 @@ function findVariableValue(variables, name) {
 
 function resolveVariables(value, variables, environmentVariables = {}, depth = 0) {
     if (depth > 10) return value;
-    if (!value) return value;
+    if (!value || typeof value !== 'string') return value;
 
     return value.replace(/\{\{([^}]+)\}\}/g, (match, variable) => {
         const varName = variable.trim();
         const resolved = environmentVariables[varName] || findVariableValue(variables, varName) || match;
-
-        if (resolved !== match && resolved.includes('{{')) {
+        if (resolved !== match &&  typeof resolved==='string'&& resolved.includes('{{')) {
+            console.log('NOTTTTT',resolved)
             return resolveVariables(resolved, variables, environmentVariables, depth + 1);
         }
         return resolved;
@@ -110,15 +115,28 @@ function resolveUrl(url, variables, environmentVariables = {}) {
 function getUrlFromRequest(request, variables, environmentVariables) {
     if (!request?.url) return { url: null, originalUrl: null };
 
+    try {
     const originalUrl = typeof request.url === 'string' ? request.url :
         request.url.raw ? request.url.raw :
             Array.isArray(request.url.host) && Array.isArray(request.url.path) ?
                 `${request.url.protocol || 'https'}://${request.url.host.join('.')}/${request.url.path.join('/')}` :
                 null;
 
-    const resolvedUrl = resolveUrl(request.url, variables, environmentVariables);
-
+    let resolvedUrl = resolveUrl(request.url, variables, environmentVariables);
+    // Try to construct a valid URL
+        try {
+            new URL(resolvedUrl);
+        } catch (e) {
+            // If URL is invalid, try to fix it
+            if (!resolvedUrl.startsWith('http')) {
+                resolvedUrl = `https://${resolvedUrl}`;
+            }
+        }
     return { url: resolvedUrl, originalUrl };
+    } catch (error) {
+        console.warn('Error processing URL:', error);
+        return { url: null, originalUrl: null };
+    }
 }
 
 function normalizeEndpointPath(path) {
@@ -144,7 +162,8 @@ function groupEndpointsByApi(items, context, parentFolder = '') {
                 context.environmentVariables
             );
             if (!url) return;
-
+            console.log('CURRENTPATH POSTMSNSDSS',currentPath)
+            console.log('VVVV',url)
             const endpoint = {
                 name: "API fetched from Postman",
                 method: item.request.method || 'GET',
@@ -232,7 +251,9 @@ function formatApiAsset(apiName, endpoints) {
             authType: Array.from(authTypes),
             endpoints: Array.from(endpointsByVersion.entries()).map(([version, versionEndpoints]) => ({
                 version,
-                endpoints: versionEndpoints.map(endpoint => ({
+                endpoints: versionEndpoints.map(endpoint => {
+                    console.log('ENDP',endpoint?.path)
+                    return({
                     name: endpoint.name,
                     method: endpoint.method,
                     path: endpoint.path,
@@ -247,7 +268,7 @@ function formatApiAsset(apiName, endpoints) {
                         auth: endpoint.auth || null
                     },
                     responses: endpoint.responses
-                }))
+                })})
             }))
         },
         createdAt: new Date(),
@@ -359,7 +380,6 @@ const integratePostman = async (apiKey, adapterName) => {
                 return null;
             })
             .filter(Boolean); // Remove any null entries
-
         return { assets };
     } catch (error) {
         console.error('Error fetching Postman endpoints:', error);
