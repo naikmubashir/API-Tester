@@ -35,6 +35,12 @@ const apiInfoSchema = new mongoose.Schema({
     url: String,
   },
   paths: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Request', required:true,}],
+  source: {
+        type: String,
+        enum: ['swagger', 'postman'],
+        required: true,
+        default: 'swagger'
+    }
 }, { timestamps: true });
 
 // Indexes for better query performance
@@ -44,7 +50,7 @@ apiInfoSchema.index({ 'info.title': 'text' }); // Enable text search on title
 
 // Virtual for API full name
 apiInfoSchema.virtual('fullName').get(function() {
-  return `${this.info.title} v${this.info.version}`;
+  return `${this.info.title} ${this.info.version}`;
 });
 
 module.exports = mongoose.model('ApiInfo', apiInfoSchema);
