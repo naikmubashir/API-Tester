@@ -72,3 +72,15 @@ export async function apiDeleteRequest(requestId: string) {
         
     })
 }
+
+// ...existing code...
+
+export async function apiFetchFromPostman(apiKey: string) {
+    return ApiService.fetchDataWithAxios<SwaggerResponse>({
+        url: '/fetch/postman',
+        method: 'post',
+        headers: {
+            'x-postman-api-key': apiKey
+        }
+    })
+}

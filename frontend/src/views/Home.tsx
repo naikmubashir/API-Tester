@@ -1,9 +1,10 @@
-import { Button, Card, Input, Notification, Skeleton, Dialog } from '@/components/ui'
+import { Button, Card, Input, Notification, Skeleton, Dialog, Tabs } from '@/components/ui'
 import { useEffect, useState } from 'react'
 import {
     apiFetchAndStoreSwagger,
     apiGetAllSwaggers,
-    apiDeleteSwagger
+    apiDeleteSwagger,
+    apiFetchFromPostman
 } from '@/services/SwaggerApiService'
 import toast from '@/components/ui/toast'
 import classNames from '@/utils/classNames'
@@ -21,6 +22,10 @@ const Home = () => {
     });
     const [rules, setRules] = useState<any>([])
     const [loadingData, setLoadingData] = useState(false)
+    const [activeTab, setActiveTab] = useState('swagger')
+    const [postmanKey, setPostmanKey] = useState('')
+    const [loadingPostman, setLoadingPostman] = useState(false)
+
     useEffect(() => {
         fetchAllSwaggers()
     }, [])
@@ -108,26 +113,98 @@ const Home = () => {
         }
     };
 
+
+
+    const handlePostmanImport = async () => {
+        if (!postmanKey.trim()) {
+            toast.push(
+                <Notification type="warning" title="Validation Error">
+                    Please provide a valid Postman API Key.
+                </Notification>,
+            )
+            return
+        }
+
+        try {
+            setLoadingPostman(true)
+            const response = await apiFetchFromPostman(postmanKey)
+            console.log('RESULT',response)
+            toast.push(
+                <Notification type="success" title="Success">
+                    {response.message}
+                </Notification>,
+            )
+            setPostmanKey('') // Clear the input after success
+            fetchAllSwaggers()
+        } catch (error) {
+            toast.push(
+                <Notification type="danger" title="Error">
+                    Failed to import from Postman API. Please try again.
+                </Notification>,
+            )
+        } finally {
+            setLoadingPostman(false)
+        }
+    }
+
     return (
         <div className="p-6 space-y-6">
-            <h1 className="text-4xl font-bold">Import Swagger API</h1>
-            <div className="flex gap-4 items-center">
-            <Input
-                name="swagger"
-                className="flex-1 border-2 border-gray-300"
-                placeholder="Enter Swagger API URL (e.g., https://api.example.com/swagger.json)"
-                value={swaggerUrl}
-                onChange={(e) => setSwaggerUrl(e.target.value)}
-            />
-            <Button
-                variant="solid"
-                loading={loading}
-                onClick={handleImport}
-                className="px-6"
-            >
-                Import
-            </Button>
-            </div>
+            <Card>
+                <Tabs value={activeTab} onChange={(val) => setActiveTab(val)}>
+                    <Tabs.TabList>
+                        <Tabs.TabNav value="swagger">Swagger Import</Tabs.TabNav>
+                        <Tabs.TabNav value="postman">Postman Import</Tabs.TabNav>
+                    </Tabs.TabList>
+                    <Tabs.TabContent value="swagger">
+                        <div className="p-4 space-y-4">
+                            <h1 className="text-4xl font-bold">Import Swagger API</h1>
+                            <div className="flex gap-4 items-center">
+                                <Input
+                                    name="swagger"
+                                    className="flex-1 border-2 border-gray-300"
+                                    placeholder="Enter Swagger API URL (e.g., https://api.example.com/swagger.json)"
+                                    value={swaggerUrl}
+                                    onChange={(e) => setSwaggerUrl(e.target.value)}
+                                />
+                                <Button
+                                    variant="solid"
+                                    loading={loading}
+                                    onClick={handleImport}
+                                    className="px-6"
+                                >
+                                    Import
+                                </Button>
+                            </div>
+                        </div>
+                    </Tabs.TabContent>
+                    <Tabs.TabContent value="postman">
+                        <div className="p-4 space-y-4">
+                            <h1 className="text-4xl font-bold">Import from Postman</h1>
+                            <div className="flex gap-4 items-center">
+                                <Input
+                                    name="postman"
+                                    className="flex-1 border-2 border-gray-300"
+                                    placeholder="Enter your Postman API Key"
+                                    type="password"
+                                    value={postmanKey}
+                                    onChange={(e) => setPostmanKey(e.target.value)}
+                                />
+                                <Button
+                                    variant="solid"
+                                    loading={loadingPostman}
+                                    onClick={handlePostmanImport}
+                                    className="px-6"
+                                >
+                                    Import
+                                </Button>
+                            </div>
+                            <p className="text-sm text-gray-500">
+                                To get your Postman API Key, go to your Postman account settings and generate a new API Key.
+                            </p>
+                        </div>
+                    </Tabs.TabContent>
+                </Tabs>
+            </Card>
             {rules.length === 0 ? (
             <h3 className="text-gray-500 text-lg">No previous imports found</h3>
             ) : (
@@ -151,9 +228,16 @@ const Home = () => {
                         <h5 className="font-bold text-xl text-gray-900 tracking-tight">
                             {rule.info.title}
                         </h5>
+                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                        rule.source === 'postman' 
+                            ? 'bg-orange-100 text-orange-600' 
+                            : 'bg-blue-100 text-blue-600'
+                    }`}>
+                        {rule.source === 'postman' ? 'Postman' : 'Swagger'}
+                    </span>
                         <div className="flex items-center gap-3">
                         <span className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-sm font-semibold">
-                            v{rule.info.version}
+                            {rule.info.version}
                         </span>
                          <Button
                         variant="plain"
