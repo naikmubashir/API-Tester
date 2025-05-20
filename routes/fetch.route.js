@@ -5,6 +5,8 @@ const Request= require('../models/Request');
 
 router.post('/', fetchController.fetchAndStoreSwagger);
 router.get('/swaggers', fetchController.getAllSwaggers);
+router.post('/postman', fetchController.fetchFromPostman);
+
 router.delete('/:id', fetchController.deleteSwagger);
 
 

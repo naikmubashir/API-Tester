@@ -1,6 +1,7 @@
 const axios = require('axios');
 const ApiInfo = require('../models/ApiInfo');
 const Request = require('../models/Request');
+const { integratePostman } = require('../services/postmanAdapter');
 
 // exports.fetchAndStoreSwagger = async (req, res) => {
 //     try {
@@ -230,6 +231,140 @@ exports.deleteSwagger = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'Failed to delete API and requests',
+            error: error.message
+        });
+    }
+};
+
+const isValidUrl = (string) => {
+    try {
+        new URL(string);
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
+
+
+// Add new function to fetch from Postman
+exports.fetchFromPostman = async (req, res) => {
+    try {
+        const apiKey = req.headers['x-postman-api-key'] || process.env.SNAPSEC_API_KEY;
+        
+        if (!apiKey) {
+            return res.status(400).json({
+                success: false,
+                message: 'Postman API key is required'
+            });
+        }
+
+        const result = await integratePostman(apiKey);
+        // Store each API from Postman as an ApiInfo document
+        const savedApis = await Promise.all(result.assets.map(async (api) => {
+            try {
+
+                 // Create or update ApiInfo
+                const apiInfo = await ApiInfo.findOneAndUpdate(
+                    {
+                        'info.title': api.name,
+                        source: 'postman'
+                    },
+                    {
+                        info: {
+                            title: api.name,
+                            description: api.assetDescription,
+                            version: api.properties.versions[0]
+                        },
+                        source: 'postman',
+                        tags:  api?.tags?.map(tag => ({
+                            name: tag,
+                            description: '' // Add empty description since it's required by schema
+                        })) || [],
+                        properties: api.properties
+                    },
+                    { upsert: true, new: true }
+                );
+
+
+                // Create requests for each endpoint
+                const requestPromises = api.properties.endpoints.flatMap(
+                    versionEndpoints => versionEndpoints.endpoints.map(async endpoint => {
+                        try{
+
+                        let path;
+                        if (isValidUrl(endpoint.originalUrl)) {
+                            const url = new URL(endpoint.originalUrl);
+                            path = url.pathname;
+                        } else {
+                            path = endpoint.path || '/';
+                        }
+                        console.log("enDDD",path)
+                        const request = await Request.findOneAndUpdate(
+                            {
+                                path,
+                                // pathName: endpoint.path,
+                                method: endpoint.method.toLowerCase(),
+                                source: 'postman',
+                                apiInfo: apiInfo._id
+                            },
+                            {
+                                path:`${path}`,
+                                method: endpoint.method.toLowerCase(),
+                                details: {
+                                    description: endpoint.description,
+                                    parameters: endpoint.request.body,
+                                    responses: endpoint.responses
+                                },
+                                source: 'postman',
+                                apiInfo: apiInfo._id
+                            },
+                            { upsert: true, new: true, runValidators:true }
+                        );
+                        return request._id;
+                        }catch(error){
+                             console.warn(`Skipping duplicate endpoint: ${endpoint.method} ${endpoint.originalUrl?.pathname}`, error);
+                             // Instead of returning null, find the existing request
+                    const existingRequest = await Request.findOne({
+                        path: normalizeEndpointPath(endpoint.originalUrl?.pathname),
+                        method: endpoint.method.toLowerCase(),
+                        apiInfo: apiInfo._id
+                    });
+                    return existingRequest?._id;
+                        }
+                    })
+                );
+
+                const requestIds = await Promise.all(requestPromises);
+                // Update apiInfo with request IDs
+                apiInfo.paths = requestIds;
+                await apiInfo.save();
+               
+                return apiInfo;
+            } catch (error) {
+                console.error(`Error saving API ${api.name}:`, error);
+                return null;
+            }
+        }));
+
+        const validApis = savedApis.filter(Boolean);
+
+        return res.status(200).json({
+            success: true,
+            message: `Successfully imported ${validApis.length} APIs from Postman`,
+            data: validApis
+        });
+
+    } catch (error) {
+        console.error('Error fetching from Postman:', error);
+        if (error.code === 11000) {
+            return res.status(409).json({
+                success: false,
+                message: 'API version already exists'
+            });
+        }
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch from Postman',
             error: error.message
         });
     }
