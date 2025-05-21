@@ -124,14 +124,14 @@ function getUrlFromRequest(request, variables, environmentVariables) {
 
     let resolvedUrl = resolveUrl(request.url, variables, environmentVariables);
     // Try to construct a valid URL
-        try {
-            new URL(resolvedUrl);
-        } catch (e) {
-            // If URL is invalid, try to fix it
-            if (!resolvedUrl.startsWith('http')) {
-                resolvedUrl = `https://${resolvedUrl}`;
-            }
-        }
+        // try {
+        //     new URL(resolvedUrl);
+        // } catch (e) {
+        //     // If URL is invalid, try to fix it
+        //     if (!resolvedUrl.startsWith('http')) {
+        //         resolvedUrl = `https://${resolvedUrl}`;
+        //     }
+        // }
     return { url: resolvedUrl, originalUrl };
     } catch (error) {
         console.warn('Error processing URL:', error);
@@ -141,11 +141,25 @@ function getUrlFromRequest(request, variables, environmentVariables) {
 
 function normalizeEndpointPath(path) {
     if (!path) return '/';
-    return path
-        .replace(/v\d+/, 'v{version}')
-        .replace(/:[^\/]+/g, '{param}')
-        .replace(/\{\{[^}]+\}\}/g, '{param}')
-        .replace(/\/{2,}/g, '/');
+    
+    // Remove query parameters
+    path = path.split('?')[0];
+    
+    // Remove trailing and leading slashes, then add leading slash
+    path = '/' + path.replace(/^\/+|\/+$/g, '');
+    
+    // Replace version numbers
+    path = path.replace(/\/v\d+\//, '/v{version}/');
+    
+    // Replace path parameters
+    path = path.replace(/:[^\/]+/g, '{param}')
+            .replace(/\{\{[^}]+\}\}/g, '{param}')
+            .replace(/\{[^}]+\}/g, '{param}');
+    
+    // Clean up double slashes
+    path = path.replace(/\/+/g, '/');
+    
+    return path || '/';
 }
 
 function groupEndpointsByApi(items, context, parentFolder = '') {
@@ -161,15 +175,24 @@ function groupEndpointsByApi(items, context, parentFolder = '') {
                 context.variables,
                 context.environmentVariables
             );
+            
             if (!url) return;
-            console.log('CURRENTPATH POSTMSNSDSS',currentPath)
-            console.log('VVVV',url)
+
+            let endpointPath;
+            try {
+                const urlObj = new URL(url);
+                endpointPath = urlObj.pathname;
+            } catch (e) {
+                // If URL parsing fails, use the normalized currentPath
+                endpointPath = normalizeEndpointPath(currentPath);
+            }
+
             const endpoint = {
-                name: "API fetched from Postman",
+                name: item.name || "API Endpoint",
                 method: item.request.method || 'GET',
                 url: url,
                 originalUrl: originalUrl,
-                path: normalizeEndpointPath(currentPath || '/'),
+                path: endpointPath,
                 description: item.request.description || '',
                 headers: item.request.header || [],
                 body: item.request.body || null,
@@ -195,15 +218,17 @@ function groupEndpointsByApi(items, context, parentFolder = '') {
         }
 
         if (Array.isArray(item.item)) {
-            const newPath = currentPath ?
-                `${currentPath}/${item.name || 'unnamed'}` :
-                (item.name || 'unnamed');
-            item.item.forEach(subItem => processItem(subItem, newPath));
+            item.item.forEach(subItem => {
+                const newPath = currentPath ?
+                    `${currentPath}/${subItem.name || 'unnamed'}` :
+                    (subItem.name || 'unnamed');
+                processItem(subItem, newPath);
+            });
         }
     }
 
     if (Array.isArray(items)) {
-        items.forEach(item => processItem(item, parentFolder));
+        items.forEach(item => processItem(item, ''));
     }
 
     return endpoints;
@@ -231,14 +256,14 @@ function formatApiAsset(apiName, endpoints) {
             authTypes.add(endpoint.auth.type || 'unknown');
         }
     });
-
+  //  console.log("EZZdSS",endpoints)
     return {
         type: 'api',
         name: apiName,
         value: apiName,
         tags: [
             "Postman",
-            "API",
+            //"API",
             // ...Array.from(workspaces).map(w => `Workspace:${w}`),
             // ...Array.from(collections).map(c => `Collection:${c}`)
         ],
@@ -252,7 +277,7 @@ function formatApiAsset(apiName, endpoints) {
             endpoints: Array.from(endpointsByVersion.entries()).map(([version, versionEndpoints]) => ({
                 version,
                 endpoints: versionEndpoints.map(endpoint => {
-                    console.log('ENDP',endpoint?.path)
+  //                  console.log('ENDPpp',endpoint?.path)
                     return({
                     name: endpoint.name,
                     method: endpoint.method,
@@ -325,6 +350,7 @@ const integratePostman = async (apiKey, adapterName) => {
         );
 
         const workspaces = workspacesResponse.data.workspaces;
+       // console.log('WORKSPACES',workspaces)
 
         for (const workspace of workspaces) {
             const environmentVariables = await getEnvironmentVariables(apiKey, workspace.id);
@@ -356,6 +382,7 @@ const integratePostman = async (apiKey, adapterName) => {
                         }
                     );
 
+                    //console.log("GROUPED ENDPOINTS",groupedEndpoints)
                     // Only add endpoints if there are any in this collection
                     groupedEndpoints.forEach((endpoints, apiName) => {
                         if (endpoints.length > 0) {
@@ -375,11 +402,13 @@ const integratePostman = async (apiKey, adapterName) => {
             .map(([apiName, endpoints]) => {
                 // Double-check that the endpoints array has items
                 if (endpoints && endpoints.length > 0) {
+                 //   console.log("ENDPOINTSSS",endpoints)
                     return formatApiAsset(apiName, endpoints);
                 }
                 return null;
             })
             .filter(Boolean); // Remove any null entries
+           // console.log('ASSS',assets)
         return { assets };
     } catch (error) {
         console.error('Error fetching Postman endpoints:', error);
@@ -392,4 +421,4 @@ const integratePostman = async (apiKey, adapterName) => {
     }
 };
 
-module.exports = { integratePostman };
+module.exports = { integratePostman , normalizeEndpointPath};

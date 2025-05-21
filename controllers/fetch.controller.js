@@ -1,7 +1,7 @@
 const axios = require('axios');
 const ApiInfo = require('../models/ApiInfo');
 const Request = require('../models/Request');
-const { integratePostman } = require('../services/postmanAdapter');
+const { integratePostman, normalizeEndpointPath } = require('../services/postmanAdapter');
 
 // exports.fetchAndStoreSwagger = async (req, res) => {
 //     try {
@@ -292,13 +292,23 @@ exports.fetchFromPostman = async (req, res) => {
                         try{
 
                         let path;
-                        if (isValidUrl(endpoint.originalUrl)) {
-                            const url = new URL(endpoint.originalUrl);
-                            path = url.pathname;
+                        if (endpoint.originalUrl) {
+                            try {
+                                const url = new URL(endpoint.originalUrl);
+                                path = url.pathname;
+                            } catch (e) {
+                                path = normalizeEndpointPath(endpoint.path);
+                            }
                         } else {
-                            path = endpoint.path || '/';
+                            path = normalizeEndpointPath(endpoint.path);
                         }
-                        console.log("enDDD",path)
+
+            // Clean the path
+            path = path.replace(/\/+/g, '/'); // Remove multiple consecutive slashes
+            if (!path.startsWith('/')) {
+                path = '/' + path;
+            }
+                        //console.log("enDDD",path)
                         const request = await Request.findOneAndUpdate(
                             {
                                 path,
