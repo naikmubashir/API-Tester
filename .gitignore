@@ -14,3 +14,8 @@ scripts
 *.env.development
 *.env.production
 *.env.test
+
+*.pub
+*.pem
+*.key
+id_rsa.pub
