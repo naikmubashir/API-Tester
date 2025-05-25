@@ -15,7 +15,7 @@ const yamlRules= require('./routes/yamlRules.route')
 const processedRequests= require('./routes/processedRequest.route');
 const scan=require('./routes/scan.route');
 const rules=require('./routes/rules.route')
-const authRoutes=require('./routes/auth.route')
+// const authRoutes=require('./routes/auth.route')
 app.use(passport.initialize()); 
 // Health Check endpoint
 app.get('/api/health', async (req, res) => {
@@ -60,7 +60,7 @@ app.use('/api/yaml-rules', yamlRules);
 app.use('/api/processed-requests',processedRequests);
 app.use('/api/scans', scan);
 app.use('/api/rules', rules);
-app.use('/api/auth', authRoutes);
+// app.use('/api/auth', authRoutes);
 
 
 // Serve static files from the React frontend app
